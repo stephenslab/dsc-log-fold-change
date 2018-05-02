@@ -1,7 +1,8 @@
-# dsc-two-sample-comparisons
+# dsc-log-fold-change
 
 This is (or will be) a Dynamic Statistical Comparison
-to compare different approaches to comparing two groups, from count data.
+to estimating (or testing) the "log-fold-change" in mean between
+two groups from count data.
 
 Our intention is to initially focus on data from single-cell experiments.
 
@@ -21,19 +22,32 @@ and optionally:
 
 Methods will output: 
 
-  - $log_fold_change a vector of estimates of log(mu1/mu2) for each gene where mu1 is the mean of group 1 and mu2 is the mean of group 2
+  - $log_fold_change_est a vector of estimates of log(mu1/mu2) for each gene where mu1 is the mean of group 1 and mu2 is the mean of group 2
   - $s_hat a vector of standard error for the estimated $log_fold_change
   - $p a p-vector of p values testing whether each log-fold change is 0
+
+# Data
 
 We will create synthetic data (from real data) that have
 known log-fold-change values, and compare the estimates with the real values.
 We will also assess calibration of p values (eg on null data, we should get uniform p values)
 and power.
 
-# Data 
+To create data we will take a file containing count data and select
+samples at random to create two groups. These will be "null" data.
 
-We will start by creating null data by sampling two group at random from real data.)
-
+Input:
+  - file of data
+  - n1 sample size for group 1
+  - n2 sample size for group 2
+  - p number of genes
+  - pi0 proportion of nulls 
+  - g a distribution on non-zero effects
+  
+Output:
+  - $Y1
+  - $Y2
+  - $log-fold-change (true value of log_fold_change for each gene)
 
 # Methods
 
