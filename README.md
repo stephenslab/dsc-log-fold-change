@@ -66,3 +66,9 @@ and to run the benchmark:
 ```
 ./benchmark.dsc
 ```
+
+Or to run a minimal test benchmark, eg
+
+```
+./benchmark.dsc --target "get_data * wilcoxon_test" --truncate --replicate 1 # default is in fact --replicate 1
+```
