@@ -52,3 +52,17 @@ Output:
 # Methods
 
 List methods we might want to use...
+
+# Run DSC
+
+The main DSC file is `benchmarks.dsc`. To see what is available:
+
+```
+./benchmark.dsc -h
+```
+
+and to run the benchmark:
+
+```
+./benchmark.dsc
+```
