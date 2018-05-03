@@ -12,15 +12,15 @@ The goal is to compare methods for estimating the log-fold-change between two gr
 
 Methods will input:
 
-  - $Y1 a numeric matrix of data from group 1 (n by p, n samples/cells in rows, p genes in columns) 
-  - $Y2 a numeric matrix of data from group 2 (n by p, n samples/cells in columns, p genes in columns) 
+  - $Y1 a numeric matrix of data from group 1 (p by n, p genes in columns, n samples/cells in rows)
+  - $Y2 a numeric matrix of data from group 2 (p by n, p genes in columns, n samples/cells in rows)
   
 and optionally:
 
   - $X1 an n vector of covariates from group 1 (eg "library size")
   - $X2 an n vector of covariates from group 2
 
-Methods will output: 
+Methods will output:
 
   - $log_fold_change_est a vector of estimates of log(mu1/mu2) for each gene where mu1 is the mean of group 1 and mu2 is the mean of group 2
   - $s_hat a vector of standard error for the estimated $log_fold_change
@@ -41,9 +41,9 @@ Input:
   - n1 sample size for group 1
   - n2 sample size for group 2
   - p number of genes
-  - pi0 proportion of nulls 
+  - pi0 proportion of nulls
   - g a distribution on non-zero effects
-  
+
 Output:
   - $Y1
   - $Y2
@@ -52,6 +52,3 @@ Output:
 # Methods
 
 List methods we might want to use...
-
-
-
