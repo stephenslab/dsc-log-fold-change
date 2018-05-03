@@ -4,6 +4,11 @@ run_DESeq2 <- function(Y1, Y2) {
   n2 <- dim(Y2)[2]
   x <- rep(c(1,2), times = c(n1, n2))
   x <- factor(x)
+
+  data.is.simulated <- sum(duplicated(colnames(Y))) > 0
+
+  if (data.is.simulated) { colnames(Y) <- paste0("cell.", c(1:ncol(Y)))}
+
   dds <- DESeqDataSetFromMatrix(countData = round(Y),
                                 colData = data.frame(condition = x),
                                 design = ~condition)
