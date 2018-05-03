@@ -1,0 +1,17 @@
+# input: two count matrices Y1, Y2 with dimensions
+run_DESeq2: R(Y <- cbind($(Y1), $(Y2));
+              x <- rep(c(1,2), each = c(dim($(Y1))[2],dim($(Y2))[2]));
+              dds <- DESeqDataSetFromMatrix(countData = round(Y),
+                                            colData = data.frame(condition = x),
+                                            design = ~x);
+              dds <- DESeq(dds);
+              res <- results(dds, contrast = c("condition", levels(factor(x))[1],
+                                               levels(factor(x))[2]), alpha = 0.05);
+
+              pval <- res$pval;
+              log_fold_change <- res$log2FoldChange;
+              log_fold_change_est_se <- res$lfcSE)
+
+$log_fold_change: log_fold_change
+$s_hat: log_fold_change_est_se
+$pval: pval
