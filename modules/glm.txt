@@ -11,7 +11,7 @@ glm_pois: R(Y <- cbind($(Y1), $(Y2));
             est <- results$Estimate;
             se <- results$Std..Error;
             p <- results$Pr...z..)
-  $log_fold_change: est
+  $log_fold_change_est: est
   $s_hat: se
   $p: p
     
