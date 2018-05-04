@@ -8,9 +8,11 @@
 
 DSC:
   define:
+    get_data: random_sample, celltype_sample
     method: glm_pois, t_test, wilcoxon_test, DESeq2
   run:
     first_pass: get_data * (t_test, wilcoxon_test, DESeq2)
   exec_path: code
   global:
     data_file: data/rawcounts.rds
+    meta_file: data/metadata.rds

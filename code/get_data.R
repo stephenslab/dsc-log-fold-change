@@ -1,14 +1,24 @@
-get_data = function(counts, args) {
+sample_data = function(counts, n, p) {
     # each row is a gene
     # each column is a sample
     counts = as.matrix(counts)
-    n = ncol(counts)
-    p = nrow(counts)
-    args$n1 = min(n, args$n1)
-    args$n2 = min(n, args$n2)
-    args$p = min(args$p, p)
-    genes_idx = sample(1:p, args$p)
-    group1 = counts[genes_idx, sample(1:n, args$n1)]
-    group2 = counts[genes_idx, sample(1:n, args$n2)]
-    return(list(x=group1, y=group2, p=p))
+    nn = ncol(counts)
+    pp = nrow(counts)
+    n = min(nn, n)
+    p = min(pp, p)
+    genes_idx = sample(1:pp, p)
+    return(counts[genes_idx, sample(1:nn, n)])
+}
+
+get_data_random = function(counts, args) {
+  return(list(x=sample_data(counts, args$n1, args$p),
+              y=sample_data(counts, args$n2, args$p)))
+}
+
+get_data_celltypes = function(counts, meta, args) {
+  counts = as.matrix(counts)
+  group1 = counts[ , which(meta$celltype == args$groups[1])]
+  group2 = counts[ , which(meta$celltype == args$groups[2])]
+  return(list(x=sample_data(group1, args$n1, args$p),
+              y=sample_data(group2, args$n2, args$p)))
 }
