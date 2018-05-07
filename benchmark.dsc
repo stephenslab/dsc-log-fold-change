@@ -8,7 +8,7 @@
 
 DSC:
   define:
-    get_data: random_sample, celltype_sample
+    get_data: random_sample, random_gene #, celltype_sample
     method: glm_pois, t_test, wilcoxon_test #DESeq2
   run:
     first_pass: get_data * method
