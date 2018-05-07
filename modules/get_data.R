@@ -10,9 +10,30 @@ sample_data = function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 
+#get_data_random = function(counts, args) {
+#  return(list(x=sample_data(counts, args$n1, args$p),
+#              y=sample_data(counts, args$n2, args$p)))
+#}
+
+get_data_pergene = function(counts, args) {
+  df <- sample_data(counts, args$n1+args$n2, args$p)
+  group <- c(rep(1, args$n1), rep(2, args$n2))
+  df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
+      df[g,sample(ncol(df))]
+  }))
+  x <- df.perm[,group==1]
+  y <- df.perm[,group==2]
+  return(list(x=x,
+              y=y))
+}
+
 get_data_random = function(counts, args) {
-  return(list(x=sample_data(counts, args$n1, args$p),
-              y=sample_data(counts, args$n2, args$p)))
+  df <- sample_data(counts, args$n1+args$n2, args$p)
+  group <- c(rep(1, args$n1), rep(2, args$n2))
+  x <- df[,group==1]
+  y <- df[,group==2]
+  return(list(x=x,
+              y=y))
 }
 
 get_data_celltypes = function(counts, meta, args) {
