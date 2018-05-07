@@ -19,7 +19,7 @@ run_DESeq2 <- function(Y1, Y2) {
     } else {
     register(MulticoreParam(ncores_default))
     }
-  dds <- DESeq(dds, parallel = TRUE)
+  dds <- DESeq(dds, parallel = TRUE, sftype="iterate")
   res <- results(dds, contrast = c("condition", levels(factor(x))[1],
                                    levels(factor(x))[2]), alpha = 0.05);
 
