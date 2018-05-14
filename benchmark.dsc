@@ -14,5 +14,5 @@ DSC:
     first_pass: get_data * method
   exec_path: modules
   global:
-    data_file: data/rawcounts.rds
-    meta_file: data/metadata.rds
+    data_file: "data/rawcounts.rds"
+    meta_file: "data/metadata.rds"
