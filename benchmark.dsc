@@ -9,7 +9,7 @@
 DSC:
   define:
     get_data: random_sample, random_gene #, celltype_sample
-    method: glm_pois, t_test, wilcoxon_test #DESeq2
+    method: glm_pois, glm_quasipois, t_test, wilcoxon_test #DESeq2
   run:
     first_pass: get_data * method
   exec_path: modules
