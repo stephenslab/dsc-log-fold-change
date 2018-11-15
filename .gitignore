@@ -2,3 +2,6 @@ benchmark/*
 *.html
 **/.sos
 .Rproj.user
+.Rhistory
+.Rprofile
+
