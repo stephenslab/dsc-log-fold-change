@@ -1,3 +1,4 @@
 benchmark/*
 *.html
 **/.sos
+.Rproj.user
