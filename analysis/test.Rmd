@@ -1,5 +1,5 @@
 ---
-title: "first-analysis"
+title: "Evaluate two-sample tests"
 author: "jhsiao999"
 date: "2018-11-15"
 output: workflowr::wflow_html
@@ -7,9 +7,106 @@ output: workflowr::wflow_html
 
 ## Overview
 
+We applied two-sample tests for mean difference to simulated datasets.
+
+The methods applied are:
+
+* glm poisson
+* glm quasipoisson
+* t-test
+* wilcoson tet
+
+The simulated data were made from experimental datasets as described below. 
+
+1. Draw (sample without replacement) p genes and N samples from the experimental dataset. 
+
+2. For the `Correlated case`, assign samples to Group 1 or Group 2. 
+
+3. For the `Uncorrelated case`, permute sample labels for each gene, then in the permuted sample, assign samples to Group 1 or Group 2. 
+
+In addition, the parameter setting is:
+
+* Sample size (n1 vs n2): 50 vs 50, 100 vs 100
+
+* Number of genes (p): 1,000
+
+Regarding the experimental data:
+
+* single cell RNA-seq data from 10x genomics technology
+
+* The dataset used in the simulation include CD14+ Monocytes and CD8 T cells, a total of 787 samples and 946 genes. 
+
+* The complete dataset include 2,700 single cells and 32,738 genes from 8 immune cell types: B cells, CD4 T cells, CD8 T cells, CD14+ Monocytes, Dendritic cells, FCGR3A+ Monocytes, Megakaryocytes, NK cells. 
+
+* We filtered the original data to include samples that are detected in > 200 genes and genes that are detected in > 20% of cells.
 
 
-```{r}
+---
 
+## Results
+
+```{r, fig.show='hold'}
+library(dscrutils)
+#setwd("~/Dropbox/GitHub/dsc-log-fold-change/dsc")
+dir_dsc <- "/Users/joycehsiao/Dropbox/GitHub/dsc-log-fold-change/dsc/benchmark"
+out <- dscquery(dir_dsc, 
+                c("get_data", "get_data.n1", "get_data.n2", "method", "method.p"))
+
+
+plotRest <- function(dir_dsc, dscoutput, 
+                     sim_case=c("random_sample", "random_gene"), 
+                     sample_size=c(50,100),
+                     title_label, plot=T, return_res=T) {
+#dscoutput <- out; sim_case="random_sample"; sample_size=50  
+  out.sub <- dscoutput[dscoutput$get_data==sim_case & dscoutput$get_data.n1==sample_size,]
+  res <- vector("list",4)
+  for (i in 1:nrow(out.sub)) {
+  #  print(i)
+    fl <- readRDS(file.path(dir_dsc,
+                         paste0(as.character(out.sub$method.p[i]), ".rds")))
+    res[[i]] <- data.frame(method = as.character(out.sub$method)[i],
+               n1_n2 = paste0(out.sub$get_data.n1[i],".",
+                              out.sub$get_data.n2[i]),
+               pval = fl$p,
+               stringsAsFactors = F)
+  }
+  names(res) <- as.character(out.sub$method)
+  
+  if (plot) {
+    cols <- c("gray50", "forestgreen", "blue", "orange")
+    par(mfrow=c(2,2))
+    for (i in 1:length(res)) {
+      hist(res[[i]]$pval, main="",
+           xlab = "p-values", ylab = "Frequency",
+           nclass = 20, col=cols[i])
+      title(main=names(res)[i])
+    }
+    title(title_label, outer=T, line=-1)
+    
+    qq <- lapply(1:length(res), function(i) {
+      qqplot(x=runif(sample_size*2,0,1), y=res[[i]]$pval, plot.it=F)
+    })
+    plot(qq[[1]]$x, qq[[1]]$y, col = "gray50", cex=.7, pch = 16,
+         xlab = "Uniform(0,1)", ylab = "Empirical distribution",
+         main = "QQ-plot")
+    points(qq[[2]]$x, qq[[2]]$y, col = "forestgreen", cex=.7, pch = 16)
+    points(qq[[2]]$x, qq[[2]]$y, col = "blue", cex=.7, pch = 16)
+    points(qq[[3]]$x, qq[[3]]$y, col = "orange", cex=.7, pch = 16)
+    abline(0,1, col = "black")
+    title(title_label, outer=TRUE, line=-1)
+  }
+  
+  if (return_res) {
+  return(res)
+  }
+}
+
+out.corr <- plotRest(dir_dsc=dir_dsc, dscoutput=out, sim_case="random_sample", 
+                     sample_size=50,
+                     title_label="Correlated case: 50 vs 50", plot=T, return_res=T)
+
+out.uncorr <- plotRest(dir_dsc=dir_dsc, dscoutput=out, sim_case="random_gene", 
+                       sample_size=50,
+                       title_label="Uncorrelated case: 50 vs 50", plot=T, return_res=T)
 ```
 
