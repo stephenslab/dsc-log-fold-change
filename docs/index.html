@@ -221,7 +221,7 @@ div.section {
 </div>
 
 
-<p><strong>Last updated:</strong> 2018-11-15</p>
+<p><strong>Last updated:</strong> 2018-11-16</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
@@ -230,37 +230,27 @@ div.section {
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/0cc76ea4ae9e65bbe410a2fe13e6401ae6b0d9f0" target="_blank">0cc76ea</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/c3707b472c9afd826a0b7033a7d1e6fcfb8b3a98" target="_blank">c3707b4</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
     Ignored:    .DS_Store
+    Ignored:    .Rhistory
+    Ignored:    .Rprofile
     Ignored:    .Rproj.user/
     Ignored:    .sos/
     Ignored:    analysis/.DS_Store
+    Ignored:    analysis/.sos/
+    Ignored:    dsc/.DS_Store
+    Ignored:    dsc/.sos/
+    Ignored:    dsc/benchmark/.DS_Store
+    Ignored:    dsc/modules/.DS_Store
 
 Untracked files:
-    Untracked:  .Rhistory
-    Untracked:  dsc/
-    Untracked:  notes/
+    Untracked:  docs/figure/
 
 Unstaged changes:
-    Modified:   .gitignore
-    Modified:   analysis/_site.yml
-    Deleted:    benchmark.dsc
-    Deleted:    code/README.md
-    Deleted:    code/config.yaml
-    Deleted:    data/README.md
-    Deleted:    data/metadata.rds
-    Deleted:    data/rawcounts.rds
-    Deleted:    modules/get_data.R
-    Deleted:    modules/get_data.dsc
-    Deleted:    modules/glm.dsc
-    Deleted:    modules/run_DESeq2.R
-    Deleted:    modules/run_DESeq2.dsc
-    Deleted:    modules/t_test.dsc
-    Deleted:    modules/wilcox_test.dsc
-    Deleted:    output/README.md
+    Modified:   dsc/benchmark.query.R
 
 </code></pre>
 Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
@@ -289,6 +279,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/c3707b472c9afd826a0b7033a7d1e6fcfb8b3a98/analysis/index.Rmd" target="_blank">c3707b4</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-15
+</td>
+<td style="text-align:left;">
+prelim results on two-sample tests
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/a85bfe74155acf53c5b2b92b49d2d565b3c105f7/docs/index.html" target="_blank">a85bfe7</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-15
+</td>
+<td style="text-align:left;">
+add back htmls
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -329,12 +353,9 @@ Start workflowr project.
 <p></details></p>
 <hr />
 <p>Project website for benchmarking methods for single-cell DE methods.</p>
-<div id="outline" class="section level2">
-<h2>Outline</h2>
 <ul>
-<li><a href="test.html">Testpage</a></li>
+<li><a href="test.html">Investigate p-value distributions: t-test, glm poisson, glm quasipoisson, wilcoxon test</a></li>
 </ul>
-</div>
 
 <!-- Adjust MathJax settings so that all math formulae are shown using
 TeX fonts only; see

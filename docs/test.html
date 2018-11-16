@@ -13,7 +13,7 @@
 
 <meta name="date" content="2018-11-15" />
 
-<title>first-analysis</title>
+<title>Evaluate two-sample tests</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -21,9 +21,6 @@
 <script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
-<script src="site_libs/jqueryui-1.11.4/jquery-ui.min.js"></script>
-<link href="site_libs/tocify-1.9.1/jquery.tocify.css" rel="stylesheet" />
-<script src="site_libs/tocify-1.9.1/jquery.tocify.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
@@ -174,101 +171,6 @@ $(document).ready(function () {
 
 
 
-<script>
-$(document).ready(function ()  {
-
-    // move toc-ignore selectors from section div to header
-    $('div.section.toc-ignore')
-        .removeClass('toc-ignore')
-        .children('h1,h2,h3,h4,h5').addClass('toc-ignore');
-
-    // establish options
-    var options = {
-      selectors: "h1,h2,h3",
-      theme: "bootstrap3",
-      context: '.toc-content',
-      hashGenerator: function (text) {
-        return text.replace(/[.\\/?&!#<>]/g, '').replace(/\s/g, '_').toLowerCase();
-      },
-      ignoreSelector: ".toc-ignore",
-      scrollTo: 0
-    };
-    options.showAndHide = true;
-    options.smoothScroll = true;
-
-    // tocify
-    var toc = $("#TOC").tocify(options).data("toc-tocify");
-});
-</script>
-
-<style type="text/css">
-
-#TOC {
-  margin: 25px 0px 20px 0px;
-}
-@media (max-width: 768px) {
-#TOC {
-  position: relative;
-  width: 100%;
-}
-}
-
-
-.toc-content {
-  padding-left: 30px;
-  padding-right: 40px;
-}
-
-div.main-container {
-  max-width: 1200px;
-}
-
-div.tocify {
-  width: 20%;
-  max-width: 260px;
-  max-height: 85%;
-}
-
-@media (min-width: 768px) and (max-width: 991px) {
-  div.tocify {
-    width: 25%;
-  }
-}
-
-@media (max-width: 767px) {
-  div.tocify {
-    width: 100%;
-    max-width: none;
-  }
-}
-
-.tocify ul, .tocify li {
-  line-height: 20px;
-}
-
-.tocify-subheader .tocify-item {
-  font-size: 0.90em;
-  padding-left: 25px;
-  text-indent: 0;
-}
-
-.tocify .list-group-item {
-  border-radius: 0px;
-}
-
-
-</style>
-
-<!-- setup 3col/9col grid for toc_float and main content  -->
-<div class="row-fluid">
-<div class="col-xs-12 col-sm-4 col-md-3">
-<div id="TOC" class="tocify">
-</div>
-</div>
-
-<div class="toc-content col-xs-12 col-sm-8 col-md-9">
-
-
 
 
 <div class="navbar navbar-default  navbar-fixed-top" role="navigation">
@@ -316,14 +218,21 @@ div.section {
 
 
 
-<h1 class="title toc-ignore">first-analysis</h1>
+<h1 class="title toc-ignore">Evaluate two-sample tests</h1>
 <h4 class="author"><em>jhsiao999</em></h4>
 <h4 class="date"><em>2018-11-15</em></h4>
 
 </div>
 
+<div id="TOC">
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#results">Results</a></li>
+<li><a href="#session-information">Session information</a></li>
+</ul>
+</div>
 
-<p><strong>Last updated:</strong> 2018-11-15</p>
+<p><strong>Last updated:</strong> 2018-11-16</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
@@ -347,7 +256,7 @@ div.section {
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/e4a71f77e59d309cb35f5718269e91b4770841cf" target="_blank">e4a71f7</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/c3707b472c9afd826a0b7033a7d1e6fcfb8b3a98" target="_blank">c3707b4</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
@@ -357,9 +266,15 @@ Ignored files:
     Ignored:    .Rproj.user/
     Ignored:    .sos/
     Ignored:    analysis/.DS_Store
+    Ignored:    analysis/.sos/
+    Ignored:    docs/figure/
     Ignored:    dsc/.DS_Store
+    Ignored:    dsc/.sos/
     Ignored:    dsc/benchmark/.DS_Store
     Ignored:    dsc/modules/.DS_Store
+
+Unstaged changes:
+    Modified:   dsc/benchmark.query.R
 
 </code></pre>
 Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
@@ -388,6 +303,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/c3707b472c9afd826a0b7033a7d1e6fcfb8b3a98/analysis/test.Rmd" target="_blank">c3707b4</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-15
+</td>
+<td style="text-align:left;">
+prelim results on two-sample tests
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/a85bfe74155acf53c5b2b92b49d2d565b3c105f7/docs/test.html" target="_blank">a85bfe7</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-15
+</td>
+<td style="text-align:left;">
+add back htmls
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -429,6 +378,100 @@ first commit
 <hr />
 <div id="overview" class="section level2">
 <h2>Overview</h2>
+<p>We applied two-sample tests for mean difference to simulated datasets.</p>
+<p>The methods applied are:</p>
+<ul>
+<li>glm poisson</li>
+<li>glm quasipoisson</li>
+<li>t-test</li>
+<li>wilcoson tet</li>
+</ul>
+<p>The simulated data were made from experimental datasets as described below.</p>
+<ol style="list-style-type: decimal">
+<li><p>Draw (sample without replacement) p genes and N samples from the experimental dataset.</p></li>
+<li><p>For the <code>Correlated case</code>, assign samples to Group 1 or Group 2.</p></li>
+<li><p>For the <code>Uncorrelated case</code>, permute sample labels for each gene, then in the permuted sample, assign samples to Group 1 or Group 2.</p></li>
+</ol>
+<p>In addition, the parameter setting is:</p>
+<ul>
+<li><p>Sample size (n1 vs n2): 50 vs 50, 100 vs 100</p></li>
+<li><p>Number of genes (p): 1,000</p></li>
+</ul>
+<p>Regarding the experimental data:</p>
+<ul>
+<li><p>single cell RNA-seq data from 10x genomics technology</p></li>
+<li><p>The dataset used in the simulation include CD14+ Monocytes and CD8 T cells, a total of 787 samples and 946 genes.</p></li>
+<li><p>The complete dataset include 2,700 single cells and 32,738 genes from 8 immune cell types: B cells, CD4 T cells, CD8 T cells, CD14+ Monocytes, Dendritic cells, FCGR3A+ Monocytes, Megakaryocytes, NK cells.</p></li>
+<li><p>We filtered the original data to include samples that are detected in &gt; 200 genes and genes that are detected in &gt; 20% of cells.</p></li>
+</ul>
+<hr />
+</div>
+<div id="results" class="section level2">
+<h2>Results</h2>
+<pre class="r"><code>library(dscrutils)
+#setwd(&quot;~/Dropbox/GitHub/dsc-log-fold-change/dsc&quot;)
+dir_dsc &lt;- &quot;/Users/joycehsiao/Dropbox/GitHub/dsc-log-fold-change/dsc/benchmark&quot;
+out &lt;- dscquery(dir_dsc, 
+                c(&quot;get_data&quot;, &quot;get_data.n1&quot;, &quot;get_data.n2&quot;, &quot;method&quot;, &quot;method.p&quot;))</code></pre>
+<pre><code>Loading dsc-query output from CSV file.
+Reading DSC outputs:
+ - method.p: vectors not extracted (set max.extract.vector = 946 to extract)</code></pre>
+<pre class="r"><code>plotRest &lt;- function(dir_dsc, dscoutput, 
+                     sim_case=c(&quot;random_sample&quot;, &quot;random_gene&quot;), 
+                     sample_size=c(50,100),
+                     title_label, plot=T, return_res=T) {
+#dscoutput &lt;- out; sim_case=&quot;random_sample&quot;; sample_size=50  
+  out.sub &lt;- dscoutput[dscoutput$get_data==sim_case &amp; dscoutput$get_data.n1==sample_size,]
+  res &lt;- vector(&quot;list&quot;,4)
+  for (i in 1:nrow(out.sub)) {
+  #  print(i)
+    fl &lt;- readRDS(file.path(dir_dsc,
+                         paste0(as.character(out.sub$method.p[i]), &quot;.rds&quot;)))
+    res[[i]] &lt;- data.frame(method = as.character(out.sub$method)[i],
+               n1_n2 = paste0(out.sub$get_data.n1[i],&quot;.&quot;,
+                              out.sub$get_data.n2[i]),
+               pval = fl$p,
+               stringsAsFactors = F)
+  }
+  names(res) &lt;- as.character(out.sub$method)
+  
+  if (plot) {
+    cols &lt;- c(&quot;gray50&quot;, &quot;forestgreen&quot;, &quot;blue&quot;, &quot;orange&quot;)
+    par(mfrow=c(2,2))
+    for (i in 1:length(res)) {
+      hist(res[[i]]$pval, main=&quot;&quot;,
+           xlab = &quot;p-values&quot;, ylab = &quot;Frequency&quot;,
+           nclass = 20, col=cols[i])
+      title(main=names(res)[i])
+    }
+    title(title_label, outer=T, line=-1)
+    
+    qq &lt;- lapply(1:length(res), function(i) {
+      qqplot(x=runif(sample_size*2,0,1), y=res[[i]]$pval, plot.it=F)
+    })
+    plot(qq[[1]]$x, qq[[1]]$y, col = &quot;gray50&quot;, cex=.7, pch = 16,
+         xlab = &quot;Uniform(0,1)&quot;, ylab = &quot;Empirical distribution&quot;,
+         main = &quot;QQ-plot&quot;)
+    points(qq[[2]]$x, qq[[2]]$y, col = &quot;forestgreen&quot;, cex=.7, pch = 16)
+    points(qq[[2]]$x, qq[[2]]$y, col = &quot;blue&quot;, cex=.7, pch = 16)
+    points(qq[[3]]$x, qq[[3]]$y, col = &quot;orange&quot;, cex=.7, pch = 16)
+    abline(0,1, col = &quot;black&quot;)
+    title(title_label, outer=TRUE, line=-1)
+  }
+  
+  if (return_res) {
+  return(res)
+  }
+}
+
+out.corr &lt;- plotRest(dir_dsc=dir_dsc, dscoutput=out, sim_case=&quot;random_sample&quot;, 
+                     sample_size=50,
+                     title_label=&quot;Correlated case: 50 vs 50&quot;, plot=T, return_res=T)
+
+out.uncorr &lt;- plotRest(dir_dsc=dir_dsc, dscoutput=out, sim_case=&quot;random_gene&quot;, 
+                       sample_size=50,
+                       title_label=&quot;Uncorrelated case: 50 vs 50&quot;, plot=T, return_res=T)</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-1-1.png" width="672" style="display: block; margin: auto;" /><img src="figure/test.Rmd/unnamed-chunk-1-2.png" width="672" style="display: block; margin: auto;" /><img src="figure/test.Rmd/unnamed-chunk-1-3.png" width="672" style="display: block; margin: auto;" /><img src="figure/test.Rmd/unnamed-chunk-1-4.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="session-information" class="section level2">
 <h2>Session information</h2>
@@ -446,6 +489,9 @@ locale:
 
 attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] dscrutils_0.2.7.11
 
 loaded via a namespace (and not attached):
  [1] workflowr_1.1.1   Rcpp_1.0.0        digest_0.6.18    
@@ -478,8 +524,6 @@ footer is added to webpages before the MathJax javascript. -->
 <hr>
 
 
-</div>
-</div>
 
 </div>
 
