@@ -1,5 +1,5 @@
 library(dscrutils)
-setwd("~/Dropbox/GitHub/dsc-log-fold-change/")
+setwd("~/Dropbox/GitHub/dsc-log-fold-change/dsc")
 out <- dscquery("benchmark", c("get_data", "get_data.n1", "get_data.n2", "method", "method.p"))
 
 # random sampling same labels across genes
@@ -79,4 +79,3 @@ points(qq[[2]]$x, qq[[2]]$y, col = "blue", cex=.7, pch = 16)
 points(qq[[3]]$x, qq[[3]]$y, col = "orange", cex=.7, pch = 16)
 abline(0,1, col = "black")
 title("random gene; 50 & 50", outer=TRUE, line=-1)
-
