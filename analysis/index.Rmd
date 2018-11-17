@@ -9,4 +9,6 @@ output:
 Project website for benchmarking methods for single-cell DE methods. 
 
 
-* [Investigate p-value distributions: t-test, glm poisson, glm quasipoisson, wilcoxon test](test.html)
+First, consider 
+
+* [Investigate Type I error control](test.html)
