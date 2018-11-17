@@ -7,7 +7,7 @@ sample_correlated: R(counts = readRDS(${data_file})) + \
   $Y1: splitted$x
   $Y2: splitted$y
 
-sample_uncorrelated(get_sample_correlated): R(counts = readRDS(${data_file})) + \
+sample_uncorrelated(sample_correlated): R(counts = readRDS(${data_file})) + \
                get_data.R + \
                R(splitted = get_sample_uncorrelated(counts, args))
 

@@ -1,5 +1,5 @@
 deseq2: methodsMeanExpression.R + \
-      R(res <- run_DESeq2(Y1, Y2))
+      R(res <- run_deseq2(Y1, Y2))
   @CONF: R_libs = (DESeq2, BiocParallel)
   Y1: $Y1
   Y2: $Y2
@@ -11,27 +11,44 @@ deseq2: methodsMeanExpression.R + \
 #genes are rows
 #input is raw counts
 glm_pois: methodsMeanExpression.R + \
-          R(res <- run_glm(Y1, Y2);
+          R(res <- run_glm(Y1, Y2, family);
             est <- res$Estimate;
             se <- res$Std..Error;
-            p <- res$Pr...z..)
+            p <- res$Pr)
+  Y1: $Y1
+  Y2: $Y2
+  family: "poisson"
+  $log_fold_change_est: est
+  $s_hat: se
+  $p: p
+
+glm_quasipois: methodsMeanExpression.R + \
+          R(res <- run_glm(Y1, Y2, family);
+            est <- res$Estimate;
+            se <- res$Std..Error;
+            p <- res$Pr)
+  Y1: $Y1
+  Y2: $Y2
+  family: "quasipoisson"
   $log_fold_change_est: est
   $s_hat: se
   $p: p
 
 
-ttest: methodMeanExpressin.R + \
-       R(res <- run_ttest(Y2, Y2))
-   x: $Y1
-   y: $Y2
+
+
+t_test: methodsMeanExpression.R + \
+       R(res <- run_t_test(Y1, Y2))
+   Y1: $Y1
+   Y2: $Y2
    $p: res[2,]
    $log_fold_change_est: res[1,]
 
 
-wilcoxon: methodMeanExpressin.R + \
+wilcoxon: methodsMeanExpression.R + \
         R(res <- run_wilcoxon(Y1, Y2))
-   x: $Y1
-   y: $Y2
+   Y1: $Y1
+   Y2: $Y2
    $p: res[2,]
    $log_fold_change_est: res[1,]
 
