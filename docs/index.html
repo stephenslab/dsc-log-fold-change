@@ -20,6 +20,7 @@
 <script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
 <script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
 <link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
 <link href="site_libs/font-awesome-5.0.13/css/fa-svg-with-js.css" rel="stylesheet" />
@@ -165,6 +166,14 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
 
 
 
@@ -214,6 +223,14 @@ div.section {
 
 <div class="fluid-row" id="header">
 
+<div class="btn-group pull-right">
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
 
 
 <h1 class="title toc-ignore">Home</h1>
@@ -221,7 +238,7 @@ div.section {
 </div>
 
 
-<p><strong>Last updated:</strong> 2018-11-16</p>
+<p><strong>Last updated:</strong> 2018-11-17</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
@@ -230,7 +247,7 @@ div.section {
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/c3707b472c9afd826a0b7033a7d1e6fcfb8b3a98" target="_blank">c3707b4</a> </summary></p>
+<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/afbb6872374797a1b19391c8e3166e3cc22a3892" target="_blank">afbb687</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
@@ -247,10 +264,44 @@ Ignored files:
     Ignored:    dsc/modules/.DS_Store
 
 Untracked files:
-    Untracked:  docs/figure/
+    Untracked:  dsc/benchmark/DESeq2/sample_correlated_1_deseq2_1.rds
+    Untracked:  dsc/benchmark/DESeq2/sample_correlated_1_deseq2_1.stderr
+    Untracked:  dsc/benchmark/DESeq2/sample_correlated_2_deseq2_1.rds
+    Untracked:  dsc/benchmark/DESeq2/sample_correlated_2_deseq2_1.stderr
+    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_1_deseq2_1.rds
+    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_1_deseq2_1.stderr
+    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_2_deseq2_1.rds
+    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_2_deseq2_1.stderr
+    Untracked:  dsc/benchmark/glm_pois/sample_correlated_1_glm_pois_1.rds
+    Untracked:  dsc/benchmark/glm_pois/sample_correlated_2_glm_pois_1.rds
+    Untracked:  dsc/benchmark/glm_pois/sample_uncorrelated_1_glm_pois_1.rds
+    Untracked:  dsc/benchmark/glm_pois/sample_uncorrelated_2_glm_pois_1.rds
+    Untracked:  dsc/benchmark/glm_quasipois/sample_correlated_1_glm_quasipois_1.rds
+    Untracked:  dsc/benchmark/glm_quasipois/sample_correlated_2_glm_quasipois_1.rds
+    Untracked:  dsc/benchmark/glm_quasipois/sample_uncorrelated_1_glm_quasipois_1.rds
+    Untracked:  dsc/benchmark/glm_quasipois/sample_uncorrelated_2_glm_quasipois_1.rds
+    Untracked:  dsc/benchmark/sample_correlated/
+    Untracked:  dsc/benchmark/sample_uncorrelated/
+    Untracked:  dsc/benchmark/t_test/sample_correlated_1_t_test_1.rds
+    Untracked:  dsc/benchmark/t_test/sample_correlated_2_t_test_1.rds
+    Untracked:  dsc/benchmark/t_test/sample_uncorrelated_1_t_test_1.rds
+    Untracked:  dsc/benchmark/t_test/sample_uncorrelated_2_t_test_1.rds
+    Untracked:  dsc/benchmark/wilcoxon/
 
 Unstaged changes:
-    Modified:   dsc/benchmark.query.R
+    Modified:   dsc/benchmark.dsc
+    Deleted:    dsc/benchmark.query.R
+    Modified:   dsc/benchmark/benchmark.conf.mpk
+    Modified:   dsc/benchmark/benchmark.db
+    Modified:   dsc/benchmark/benchmark.map.mpk
+    Modified:   dsc/modules/get_data.dsc
+    Deleted:    dsc/modules/glm.dsc
+    Modified:   dsc/modules/methodsMeanExpression.R
+    Modified:   dsc/modules/methodsMeanExpression.dsc
+    Deleted:    dsc/modules/run_DESeq2.R
+    Deleted:    dsc/modules/run_DESeq2.dsc
+    Deleted:    dsc/modules/t_test.dsc
+    Deleted:    dsc/modules/wilcox_test.dsc
 
 </code></pre>
 Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
@@ -279,6 +330,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/afbb6872374797a1b19391c8e3166e3cc22a3892/analysis/index.Rmd" target="_blank">afbb687</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-16
+</td>
+<td style="text-align:left;">
+add DESeq2
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/5dd99de23fd6d01c1d01f876078f5bb0ab14eecf/docs/index.html" target="_blank">5dd99de</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-15
+</td>
+<td style="text-align:left;">
+Build site.
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -353,8 +438,9 @@ Start workflowr project.
 <p></details></p>
 <hr />
 <p>Project website for benchmarking methods for single-cell DE methods.</p>
+<p>First, consider</p>
 <ul>
-<li><a href="test.html">Investigate p-value distributions: t-test, glm poisson, glm quasipoisson, wilcoxon test</a></li>
+<li><a href="test.html">Investigate Type I error control</a></li>
 </ul>
 
 <!-- Adjust MathJax settings so that all math formulae are shown using
