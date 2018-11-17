@@ -18,3 +18,4 @@ output:
     toc_float: FALSE
     theme: cosmo
     highlight: textmate
+    code_folding: hide
