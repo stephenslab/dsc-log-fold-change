@@ -35,6 +35,15 @@ glm_quasipois: methodsMeanExpression.R + \
   $p: p
 
 
+limma_voom: methodsMeanExpression.R + \
+       R(res <- run_limma_voom(Y1, Y2))
+  @CONF: R_libs = (limma, edgeR)
+   Y1: $Y1
+   Y2: $Y2
+   $p: res$pvalue
+   $log_fold_change_est: res$betahat
+   $s_hat: res$sebetahat
+   $df: res$df
 
 
 t_test: methodsMeanExpression.R + \
