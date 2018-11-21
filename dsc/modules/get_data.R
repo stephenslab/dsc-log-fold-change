@@ -16,6 +16,8 @@ sample_data <- function(counts, n, p) {
 #}
 
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -28,6 +30,8 @@ get_sample_correlated <- function(counts, args) {
 }
 
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]

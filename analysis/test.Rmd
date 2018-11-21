@@ -44,22 +44,14 @@ Regarding the experimental data:
 
 ---
 
-## Results
+## Analysis
 
 ```{r, warning=F, message=F}
-library(dscrutils)
-#setwd("~/Dropbox/GitHub/dsc-log-fold-change/dsc")
-dir_dsc <- "/Users/joycehsiao/Dropbox/GitHub/dsc-log-fold-change/dsc/benchmark"
-out <- dscquery(dir_dsc, 
-                c("get_data", "get_data.n1", "get_data.n2", "method", "method.p"))
-
-
-plotRest <- function(dir_dsc, dscoutput, 
+get_res <- function(dir_dsc, dscoutput, 
                      sim_case=c("sample_correlated", "sample_uncorrelated"), 
-                     sample_size=c(50,300),
-                     title_label, plot=T, return_res=T) {
+                     sample_size=c(50,300)) {
+ 
   n_methods <- nlevels(dscoutput$method)
-#dscoutput <- out; sim_case="random_sample"; sample_size=50  
   out.sub <- dscoutput[dscoutput$get_data==sim_case & dscoutput$get_data.n1==sample_size,]
   
   res <- vector("list",n_methods)
@@ -68,24 +60,61 @@ plotRest <- function(dir_dsc, dscoutput,
     fl <- readRDS(file.path(dir_dsc,
                          paste0(as.character(out.sub$method.p[i]), ".rds")))
     res[[i]] <- data.frame(method = as.character(out.sub$method)[i],
-               n1_n2 = paste0(out.sub$get_data.n1[i],".",
+                           seed = out.sub$get_data.seed[i],
+                           n1_n2 = paste0(out.sub$get_data.n1[i],".",
                               out.sub$get_data.n2[i]),
-               pval = fl$p,
-               stringsAsFactors = F)
+                           pval = fl$p,
+                           stringsAsFactors = F)
   }
   names(res) <- as.character(out.sub$method)
-  
-  if (plot) {
-    cols <- RColorBrewer::brewer.pal(n_methods,name="Accent")
-    par(mfrow=c(3,2))
-    for (i in 1:length(res)) {
-      hist(res[[i]]$pval, main="",
-           xlab = "p-values", ylab = "Frequency",
-           nclass = 20, col=cols[i])
-      title(main=names(res)[i])
-    }
-    title(title_label, outer=T, line=-1)
+  return(res)
+}
+
+
+
+
+
+plotTypeI <- function(res, alpha=.05,
+                      title_label=NULL) {
+  library(dplyr)
+  res_summary <- do.call(rbind, res)
+  res_summary <- res_summary %>% group_by(method) %>% summarise(type1=mean(pval<alpha))
+  n_methods <- length(unique(res_summary$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Accent")
+  print(
+    ggplot(res_summary, aes(x=method, y=type1, col=method)) +
+      geom_point() +
+    scale_color_manual(values=cols) )
+}
+
+
+plotPval <- function(res, seed=1) {
+    library(dplyr)
+    library(ggplot2)
+
+    res_summary <- do.call(rbind, res)
+    n_methods <- length(unique(res_summary$method))
+
+    res_summary <- res_summary[res_summary$seed==seed,]
     
+    cols <- RColorBrewer::brewer.pal(n_methods,name="Accent")
+    res_summary$method <- as.factor(res_summary$method)
+    print(
+    ggplot(res_summary, aes(x=pval, fill=method)) +
+            facet_wrap(~method) +
+            geom_histogram() +
+            scale_fill_manual(values=cols)  )
+    }
+
+
+plotQQ <- function(res, seed=1, sample_size=50*2, title_label=NULL,
+                    mfrow_dim=c(2,2)) {
+    res_summary <- do.call(rbind, res)
+    n_methods <- length(unique(res_summary$method))
+    res_summary <- res_summary[res_summary$seed==seed,]
+
+    cols <- RColorBrewer::brewer.pal(n_methods,name="Accent")
+
     qq <- lapply(1:length(res), function(i) {
       qqplot(x=runif(sample_size*2,0,1), y=res[[i]]$pval, plot.it=F)
     })
@@ -97,33 +126,37 @@ plotRest <- function(dir_dsc, dscoutput,
     }
     abline(0,1, col = "black")
     title(title_label, outer=TRUE, line=-1)
-  }
-  
-  if (return_res) {
-  return(res)
-  }
 }
 ```
 
-```{r, fig.height=7}
-out.corr.50 <- plotRest(dir_dsc=dir_dsc, dscoutput=out, 
-                         sim_case="sample_correlated", 
-                         sample_size=50,
-                         title_label="Correlated case: 50 vs 50", plot=T, return_res=T)
 
-out.corr.300 <- plotRest(dir_dsc=dir_dsc, dscoutput=out, 
-                         sim_case="sample_correlated", 
-                         sample_size=300,
-                         title_label="Correlated case: 300 vs 300", plot=T, return_res=T)
+---
 
-out.uncorr.50 <- plotRest(dir_dsc=dir_dsc, dscoutput=out, 
-                         sim_case="sample_uncorrelated", 
-                         sample_size=50,
-                         title_label="Uncorrelated case: 50 vs 50", plot=T, return_res=T)
+## Results
 
-out.uncorr.300 <- plotRest(dir_dsc=dir_dsc, dscoutput=out, 
-                         sim_case="sample_uncorrelated", 
-                         sample_size=300,
-                         title_label="Uncorrelated case: 300 vs 300", plot=T, return_res=T)
+* 50 per group, correlated samples 
+
+```{r}
+library(dscrutils)
+#setwd("~/Dropbox/GitHub/dsc-log-fold-change/dsc")
+dir_dsc <- "/Users/joycehsiao/Dropbox/GitHub/dsc-log-fold-change/dsc/benchmark"
+out <- dscquery(dir_dsc, 
+                c("get_data", "get_data.seed",
+                  "get_data.n1", "get_data.n2", "method", "method.p"))
+
+res_corr <- get_res(dir_dsc, out, sim_case="sample_correlated", sample_size=50)
+plotTypeI(res_corr, alpha=.05)
+plotPval(res_corr)
+plotQQ(res, seed=1, sample_size=50*2)
 ```
+
+* 300 per group, correlated samples
+
+```{r}
+res_corr <- get_res(dir_dsc, out, sim_case="sample_correlated", sample_size=300)
+plotTypeI(res_corr, alpha=.05)
+plotPval(res_corr)
+plotQQ(res, seed=1, sample_size=300*2)
+```
+
 

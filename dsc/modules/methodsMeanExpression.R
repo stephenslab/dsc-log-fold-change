@@ -1,5 +1,10 @@
 
+
 run_deseq2 <- function(Y1, Y2) {
+
+  library(DESeq2)
+  library(BiocParallel)
+
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -49,6 +54,7 @@ run_glm <- function(Y1, Y2, family) {
 
 run_limma_voom <- function(Y1, Y2, pseudocount = .5){
 
+  library(limma)
   counts <- as.matrix(cbind(Y1, Y2))
   condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
 

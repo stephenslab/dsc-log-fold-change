@@ -1,6 +1,5 @@
 deseq2: methodsMeanExpression.R + \
       R(res <- run_deseq2(Y1, Y2))
-  @CONF: R_libs = (DESeq2, BiocParallel)
   Y1: $Y1
   Y2: $Y2
   $log_fold_change_est: res$est
@@ -37,7 +36,7 @@ glm_quasipois: methodsMeanExpression.R + \
 
 limma_voom: methodsMeanExpression.R + \
        R(res <- run_limma_voom(Y1, Y2))
-  @CONF: R_libs = (limma, edgeR)
+#  @CONF: R_libs = (limma, edgeR)
    Y1: $Y1
    Y2: $Y2
    $p: res$pvalue
