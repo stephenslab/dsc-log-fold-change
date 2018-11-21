@@ -22,9 +22,9 @@ DSC:
       #SBATCH --output={cur_dir}/.sos/{job_name}.stdout
       #SBATCH --error={cur_dir}/.sos/{job_name}.stderr
       cd {cur_dir}
-      module load R/3.4.3
+      module load R/3.5.1
     partition: "SBATCH --partition=broadwl"
-    account: "SBATCH --partition=gilad"
+    account: "SBATCH --partition=mstephens"
     submit_cmd: sbatch {job_file}
     submit_cmd_output: "Submitted batch job {job_id}"
     status_cmd: squeue --job {job_id}
@@ -38,15 +38,15 @@ DSC:
     max_cores: 28
     max_mem: 128G
     max_walltime: "10d"
-    partition: "SBATCH --partition=gilad"
-    account: "SBATCH --account=pi-gilad"
+    partition: "SBATCH --partition=mstephens"
+    account: "SBATCH --account=pi-mstephens"
 
 default:
   queue: midway2
-  time_per_instance: 10m
+  time_per_instance: 2m
   instances_per_job: 1
-  n_cpu: 8
-  mem_per_cpu: 5G
+  n_cpu: 4
+  mem_per_cpu: 2G
 
 # module specific configurations
 # mostly to consolidate small jobs
