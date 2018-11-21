@@ -1,4 +1,4 @@
-benchmark/*
+dsc/benchmark/*
 **/.sos
 .Rproj.user
 .Rhistory
