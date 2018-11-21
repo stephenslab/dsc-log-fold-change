@@ -46,6 +46,14 @@ Regarding the experimental data:
 
 ## Analysis
 
+Running job on midway2
+
+```{bash, eval=F}
+cd dsc
+
+dsc ./benchmark.dsc --host ./code/config.yaml -c 20
+```
+
 ```{r, warning=F, message=F}
 get_res <- function(dir_dsc, dscoutput, 
                      sim_case=c("sample_correlated", "sample_uncorrelated"), 
@@ -128,6 +136,8 @@ plotQQ <- function(res, seed=1, sample_size=50*2, title_label=NULL,
     title(title_label, outer=TRUE, line=-1)
 }
 ```
+
+
 
 
 ---
