@@ -45,7 +45,7 @@ default:
   queue: midway2
   time_per_instance: 2m
   instances_per_job: 1
-  n_cpu: 4
+  n_cpu: 2
   mem_per_cpu: 2G
 
 # module specific configurations

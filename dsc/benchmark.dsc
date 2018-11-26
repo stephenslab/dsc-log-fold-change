@@ -13,3 +13,5 @@ DSC:
   global:
     data_file: "data/rawcounts.rds"
     meta_file: "data/metadata.rds"
+  output:
+    "/scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark"

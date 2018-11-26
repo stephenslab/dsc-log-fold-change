@@ -2743,6 +2743,7 @@ Prism.languages.yaml={scalar:{pattern:/([\-:]\s*(![^\s]+)?[ \t]*[|>])[ \t]*(?:((
 sample_correlated: R(counts = readRDS(${data_file})) + \
                get_data.R + \
                R(splitted = get_sample_correlated(counts, args))
+  seed: R{1:1000}
   n1, n2: (50, 50), (300, 300)
   p: 1000
   @ALIAS: args = List(!data_file, !meta_file)
@@ -2758,7 +2759,6 @@ sample_uncorrelated(sample_correlated): R(counts = readRDS(${data_file})) + \
 #  groups: ("CD8 T cells", "CD14+ Monocytes")
 deseq2: methodsMeanExpression.R + \
       R(res <- run_deseq2(Y1, Y2))
-  @CONF: R_libs = (DESeq2, BiocParallel)
   Y1: $Y1
   Y2: $Y2
   $log_fold_change_est: res$est
@@ -2788,6 +2788,15 @@ glm_quasipois: methodsMeanExpression.R + \
   $log_fold_change_est: est
   $s_hat: se
   $p: p
+limma_voom: methodsMeanExpression.R + \
+       R(res <- run_limma_voom(Y1, Y2))
+#  @CONF: R_libs = (limma, edgeR)
+   Y1: $Y1
+   Y2: $Y2
+   $p: res$pvalue
+   $log_fold_change_est: res$betahat
+   $s_hat: res$sebetahat
+   $df: res$df
 t_test: methodsMeanExpression.R + \
        R(res <- run_t_test(Y1, Y2))
    Y1: $Y1
@@ -2803,7 +2812,7 @@ wilcoxon: methodsMeanExpression.R + \
 DSC:
   define:
     get_data: sample_correlated, sample_uncorrelated
-    method: glm_pois, glm_quasipois, t_test, wilcoxon, deseq2
+    method: glm_pois, glm_quasipois, t_test, wilcoxon #, deseq2,limma_voom
   run:
     first_pass: get_data * method
   exec_path: modules
@@ -2816,11 +2825,11 @@ DSC:
 <div id=sample_correlated-glm_pois class="accordion-section-content">
 <div class="tabs">
 <ul class="tab-links">
-<li class="active"><a href="#sample_correlated-glm_pois_get_datar-704b3a95">get_data.R (704b3a95)</a></li>
-<li><a href="#sample_correlated-glm_pois_methodsmeanexpressionr-e612c478">methodsMeanExpression.R (e612c478)</a></li>
+<li class="active"><a href="#sample_correlated-glm_pois_get_datar-26ef9676">get_data.R (26ef9676)</a></li>
+<li><a href="#sample_correlated-glm_pois_methodsmeanexpressionr-1503118d">methodsMeanExpression.R (1503118d)</a></li>
 </ul>
 <div class="tab-content">
-<div id="sample_correlated-glm_pois_get_datar-704b3a95" class="tab active">
+<div id="sample_correlated-glm_pois_get_datar-26ef9676" class="tab active">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 
 counts = readRDS(data_file)
@@ -2834,6 +2843,8 @@ sample_data <- function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -2845,6 +2856,8 @@ get_sample_correlated <- function(counts, args) {
               y=y))
 }
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -2854,10 +2867,13 @@ get_sample_uncorrelated <- function(counts, args) {
 }
 splitted = get_sample_correlated(counts, args)
 </code></pre></div>
-<div id="sample_correlated-glm_pois_methodsmeanexpressionr-e612c478" class="tab">
+<div id="sample_correlated-glm_pois_methodsmeanexpressionr-1503118d" class="tab">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
+library(DESeq2)
+library(limma)
+#  suppressPackageStartupMessages(library(limma))
 run_deseq2 <- function(Y1, Y2) {
+  library(BiocParallel)
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -2896,6 +2912,25 @@ run_glm <- function(Y1, Y2, family) {
   results <- data.frame(t(results))
   return(results)
 }
+run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+  counts <- as.matrix(cbind(Y1, Y2))
+  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
+  design <- model.matrix(~factor(condition))
+  if (is.null(pseudocount)) {
+    log2CPM <- log2(counts)
+  } else {
+    log2CPM <- log2(counts + pseudocount)
+  }
+  weights <- voom.controlPseudocount(counts, design)
+  fit <- lmFit(log2CPM, design, weights = weights)
+  fit.ebayes <- eBayes(fit)
+  betahat <- fit.ebayes$coefficients[,2]
+  sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
+  pvalue <- fit.ebayes$p.value[,2]
+  df <- fit.ebayes$df.total
+  return(list(betahat=betahat, sebetahat=sebetahat,
+              df=df, pvalue = pvalue))
+}
 run_t_test <- function(Y1, Y2)
 {
   res <-  sapply(1:nrow(Y1), function(i) {
@@ -2914,6 +2949,38 @@ run_wilcoxon <- function(Y1, Y2) {
       } else {
     c(w$estimate, w$p.value)}  })
   return(res)
+}
+voom.controlPseudocount <- function(counts, design,
+                                    pseudocount = .5,
+                                    pseudo_libsizes = 1,
+                                    span = .5) {
+  lib.size <- colSums(counts)
+  y <- t(log2(t(counts + pseudocount)/(lib.size + pseudo_libsizes) * 1e+06))
+  fit <- lmFit(y, design)
+  if (is.null(fit$Amean))  fit$Amean <- rowMeans(y, na.rm = TRUE)
+  sx <- fit$Amean + mean(log2(lib.size + 1)) - log2(1e+06)
+  sy <- sqrt(fit$sigma)
+  allzero <- rowSums(counts) == 0
+  if (any(allzero)) {
+    sx <- sx[!allzero]
+    sy <- sy[!allzero]
+  }
+  l <- lowess(sx, sy, f = span)
+  f <- approxfun(l, rule = 2)
+  if (fit$rank < ncol(design)) {
+    j <- fit$pivot[1:fit$rank]
+    fitted.values <- fit$coef[, j, drop = FALSE] %*% t(fit$design[,
+                                                                  j, drop = FALSE])
+  }
+  else {
+    fitted.values <- fit$coef %*% t(fit$design)
+  }
+  fitted.cpm <- 2^fitted.values
+  fitted.count <- 1e-06 * t(t(fitted.cpm) * (lib.size + pseudo_libsizes))
+  fitted.logcount <- log2(fitted.count)
+  w <- 1/f(fitted.logcount)^4
+  dim(w) <- dim(fitted.logcount)
+  return(w)
 }
 res <- run_glm(Y1, Y2, family);            est <- res$Estimate;            se <- res$Std..Error;            p <- res$Pr
 </code></pre></div>
@@ -2923,11 +2990,11 @@ res <- run_glm(Y1, Y2, family);            est <- res$Estimate;            se <-
 <div id=sample_correlated-glm_quasipois class="accordion-section-content">
 <div class="tabs">
 <ul class="tab-links">
-<li class="active"><a href="#sample_correlated-glm_quasipois_get_datar-704b3a95">get_data.R (704b3a95)</a></li>
-<li><a href="#sample_correlated-glm_quasipois_methodsmeanexpressionr-e612c478">methodsMeanExpression.R (e612c478)</a></li>
+<li class="active"><a href="#sample_correlated-glm_quasipois_get_datar-26ef9676">get_data.R (26ef9676)</a></li>
+<li><a href="#sample_correlated-glm_quasipois_methodsmeanexpressionr-1503118d">methodsMeanExpression.R (1503118d)</a></li>
 </ul>
 <div class="tab-content">
-<div id="sample_correlated-glm_quasipois_get_datar-704b3a95" class="tab active">
+<div id="sample_correlated-glm_quasipois_get_datar-26ef9676" class="tab active">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 
 counts = readRDS(data_file)
@@ -2941,6 +3008,8 @@ sample_data <- function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -2952,6 +3021,8 @@ get_sample_correlated <- function(counts, args) {
               y=y))
 }
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -2961,10 +3032,13 @@ get_sample_uncorrelated <- function(counts, args) {
 }
 splitted = get_sample_correlated(counts, args)
 </code></pre></div>
-<div id="sample_correlated-glm_quasipois_methodsmeanexpressionr-e612c478" class="tab">
+<div id="sample_correlated-glm_quasipois_methodsmeanexpressionr-1503118d" class="tab">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
+library(DESeq2)
+library(limma)
+#  suppressPackageStartupMessages(library(limma))
 run_deseq2 <- function(Y1, Y2) {
+  library(BiocParallel)
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -3003,6 +3077,25 @@ run_glm <- function(Y1, Y2, family) {
   results <- data.frame(t(results))
   return(results)
 }
+run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+  counts <- as.matrix(cbind(Y1, Y2))
+  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
+  design <- model.matrix(~factor(condition))
+  if (is.null(pseudocount)) {
+    log2CPM <- log2(counts)
+  } else {
+    log2CPM <- log2(counts + pseudocount)
+  }
+  weights <- voom.controlPseudocount(counts, design)
+  fit <- lmFit(log2CPM, design, weights = weights)
+  fit.ebayes <- eBayes(fit)
+  betahat <- fit.ebayes$coefficients[,2]
+  sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
+  pvalue <- fit.ebayes$p.value[,2]
+  df <- fit.ebayes$df.total
+  return(list(betahat=betahat, sebetahat=sebetahat,
+              df=df, pvalue = pvalue))
+}
 run_t_test <- function(Y1, Y2)
 {
   res <-  sapply(1:nrow(Y1), function(i) {
@@ -3021,6 +3114,38 @@ run_wilcoxon <- function(Y1, Y2) {
       } else {
     c(w$estimate, w$p.value)}  })
   return(res)
+}
+voom.controlPseudocount <- function(counts, design,
+                                    pseudocount = .5,
+                                    pseudo_libsizes = 1,
+                                    span = .5) {
+  lib.size <- colSums(counts)
+  y <- t(log2(t(counts + pseudocount)/(lib.size + pseudo_libsizes) * 1e+06))
+  fit <- lmFit(y, design)
+  if (is.null(fit$Amean))  fit$Amean <- rowMeans(y, na.rm = TRUE)
+  sx <- fit$Amean + mean(log2(lib.size + 1)) - log2(1e+06)
+  sy <- sqrt(fit$sigma)
+  allzero <- rowSums(counts) == 0
+  if (any(allzero)) {
+    sx <- sx[!allzero]
+    sy <- sy[!allzero]
+  }
+  l <- lowess(sx, sy, f = span)
+  f <- approxfun(l, rule = 2)
+  if (fit$rank < ncol(design)) {
+    j <- fit$pivot[1:fit$rank]
+    fitted.values <- fit$coef[, j, drop = FALSE] %*% t(fit$design[,
+                                                                  j, drop = FALSE])
+  }
+  else {
+    fitted.values <- fit$coef %*% t(fit$design)
+  }
+  fitted.cpm <- 2^fitted.values
+  fitted.count <- 1e-06 * t(t(fitted.cpm) * (lib.size + pseudo_libsizes))
+  fitted.logcount <- log2(fitted.count)
+  w <- 1/f(fitted.logcount)^4
+  dim(w) <- dim(fitted.logcount)
+  return(w)
 }
 res <- run_glm(Y1, Y2, family);            est <- res$Estimate;            se <- res$Std..Error;            p <- res$Pr
 </code></pre></div>
@@ -3030,11 +3155,11 @@ res <- run_glm(Y1, Y2, family);            est <- res$Estimate;            se <-
 <div id=sample_correlated-t_test class="accordion-section-content">
 <div class="tabs">
 <ul class="tab-links">
-<li class="active"><a href="#sample_correlated-t_test_get_datar-704b3a95">get_data.R (704b3a95)</a></li>
-<li><a href="#sample_correlated-t_test_methodsmeanexpressionr-fad8ae39">methodsMeanExpression.R (fad8ae39)</a></li>
+<li class="active"><a href="#sample_correlated-t_test_get_datar-26ef9676">get_data.R (26ef9676)</a></li>
+<li><a href="#sample_correlated-t_test_methodsmeanexpressionr-8754d7f8">methodsMeanExpression.R (8754d7f8)</a></li>
 </ul>
 <div class="tab-content">
-<div id="sample_correlated-t_test_get_datar-704b3a95" class="tab active">
+<div id="sample_correlated-t_test_get_datar-26ef9676" class="tab active">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 
 counts = readRDS(data_file)
@@ -3048,6 +3173,8 @@ sample_data <- function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -3059,6 +3186,8 @@ get_sample_correlated <- function(counts, args) {
               y=y))
 }
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -3068,10 +3197,13 @@ get_sample_uncorrelated <- function(counts, args) {
 }
 splitted = get_sample_correlated(counts, args)
 </code></pre></div>
-<div id="sample_correlated-t_test_methodsmeanexpressionr-fad8ae39" class="tab">
+<div id="sample_correlated-t_test_methodsmeanexpressionr-8754d7f8" class="tab">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
+library(DESeq2)
+library(limma)
+#  suppressPackageStartupMessages(library(limma))
 run_deseq2 <- function(Y1, Y2) {
+  library(BiocParallel)
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -3110,6 +3242,25 @@ run_glm <- function(Y1, Y2, family) {
   results <- data.frame(t(results))
   return(results)
 }
+run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+  counts <- as.matrix(cbind(Y1, Y2))
+  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
+  design <- model.matrix(~factor(condition))
+  if (is.null(pseudocount)) {
+    log2CPM <- log2(counts)
+  } else {
+    log2CPM <- log2(counts + pseudocount)
+  }
+  weights <- voom.controlPseudocount(counts, design)
+  fit <- lmFit(log2CPM, design, weights = weights)
+  fit.ebayes <- eBayes(fit)
+  betahat <- fit.ebayes$coefficients[,2]
+  sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
+  pvalue <- fit.ebayes$p.value[,2]
+  df <- fit.ebayes$df.total
+  return(list(betahat=betahat, sebetahat=sebetahat,
+              df=df, pvalue = pvalue))
+}
 run_t_test <- function(Y1, Y2)
 {
   res <-  sapply(1:nrow(Y1), function(i) {
@@ -3128,6 +3279,38 @@ run_wilcoxon <- function(Y1, Y2) {
       } else {
     c(w$estimate, w$p.value)}  })
   return(res)
+}
+voom.controlPseudocount <- function(counts, design,
+                                    pseudocount = .5,
+                                    pseudo_libsizes = 1,
+                                    span = .5) {
+  lib.size <- colSums(counts)
+  y <- t(log2(t(counts + pseudocount)/(lib.size + pseudo_libsizes) * 1e+06))
+  fit <- lmFit(y, design)
+  if (is.null(fit$Amean))  fit$Amean <- rowMeans(y, na.rm = TRUE)
+  sx <- fit$Amean + mean(log2(lib.size + 1)) - log2(1e+06)
+  sy <- sqrt(fit$sigma)
+  allzero <- rowSums(counts) == 0
+  if (any(allzero)) {
+    sx <- sx[!allzero]
+    sy <- sy[!allzero]
+  }
+  l <- lowess(sx, sy, f = span)
+  f <- approxfun(l, rule = 2)
+  if (fit$rank < ncol(design)) {
+    j <- fit$pivot[1:fit$rank]
+    fitted.values <- fit$coef[, j, drop = FALSE] %*% t(fit$design[,
+                                                                  j, drop = FALSE])
+  }
+  else {
+    fitted.values <- fit$coef %*% t(fit$design)
+  }
+  fitted.cpm <- 2^fitted.values
+  fitted.count <- 1e-06 * t(t(fitted.cpm) * (lib.size + pseudo_libsizes))
+  fitted.logcount <- log2(fitted.count)
+  w <- 1/f(fitted.logcount)^4
+  dim(w) <- dim(fitted.logcount)
+  return(w)
 }
 res <- run_t_test(Y1, Y2)
 </code></pre></div>
@@ -3137,11 +3320,11 @@ res <- run_t_test(Y1, Y2)
 <div id=sample_correlated-wilcoxon class="accordion-section-content">
 <div class="tabs">
 <ul class="tab-links">
-<li class="active"><a href="#sample_correlated-wilcoxon_get_datar-704b3a95">get_data.R (704b3a95)</a></li>
-<li><a href="#sample_correlated-wilcoxon_methodsmeanexpressionr-74c5adcd">methodsMeanExpression.R (74c5adcd)</a></li>
+<li class="active"><a href="#sample_correlated-wilcoxon_get_datar-26ef9676">get_data.R (26ef9676)</a></li>
+<li><a href="#sample_correlated-wilcoxon_methodsmeanexpressionr-92e81986">methodsMeanExpression.R (92e81986)</a></li>
 </ul>
 <div class="tab-content">
-<div id="sample_correlated-wilcoxon_get_datar-704b3a95" class="tab active">
+<div id="sample_correlated-wilcoxon_get_datar-26ef9676" class="tab active">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 
 counts = readRDS(data_file)
@@ -3155,6 +3338,8 @@ sample_data <- function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -3166,6 +3351,8 @@ get_sample_correlated <- function(counts, args) {
               y=y))
 }
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -3175,118 +3362,13 @@ get_sample_uncorrelated <- function(counts, args) {
 }
 splitted = get_sample_correlated(counts, args)
 </code></pre></div>
-<div id="sample_correlated-wilcoxon_methodsmeanexpressionr-74c5adcd" class="tab">
-<pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
-run_deseq2 <- function(Y1, Y2) {
-  Y <- cbind(as.matrix(Y1), as.matrix(Y2))
-  n1 <- dim(Y1)[2]
-  n2 <- dim(Y2)[2]
-  x <- rep(c(1,2), times = c(n1, n2))
-  x <- factor(x)
-  if (sum(duplicated(colnames(Y))) > 0) {
-    colnames(Y) <- paste0("cell.", c(1:ncol(Y))) }
-  dds <- DESeqDataSetFromMatrix(countData = round(Y),
-                                colData = data.frame(condition = x),
-                                design = ~condition)
-  ncores_default <- detectCores()
-  if (ncores_default == 8) {
-    register(MulticoreParam(4))
-  } else {
-    register(MulticoreParam(ncores_default))
-  }
-  dds <- DESeq(dds, parallel = TRUE)
-  res <- results(dds, contrast = c("condition", levels(factor(x))[1],
-                                   levels(factor(x))[2]), alpha = 0.05);
-  return(list(pval = res$pvalue,
-              est = res$log2FoldChange,
-              se = res$lfcSE))
-}
-run_glm <- function(Y1, Y2, family) {
-  Y <- cbind(Y1, Y2)
-  x <- rep(c(0, 1), c(ncol(Y1), ncol(Y2)))
-  results <- apply(Y, 1, FUN=function(y){
-    fit_try <- try(glm(y~x, family=family))
-    if (any(class(fit_try) == "try-error")) {
-      res <- rep(NA,4)
-    } else {
-      res <- summary(fit_try)$coefficients[2,]
-    }
-    return(res[c(1, 2, 4)])
-  })
-  results <- data.frame(t(results))
-  return(results)
-}
-run_t_test <- function(Y1, Y2)
-{
-  res <-  sapply(1:nrow(Y1), function(i) {
-    t <- try(t.test(Y1[i,],Y2[i,]))
-    if(class(t) == "try-error") {
-      return(c(NA, NA))
-      } else {
-    c(t$estimate[1]-t$estimate[2],t$p.value) }})
-  return(res)
-}
-run_wilcoxon <- function(Y1, Y2) {
-  res <- sapply(1:nrow(Y1), function(i){
-    w <- try(wilcox.test(Y1[i,],Y2[i,], conf.int = TRUE))
-    if(class(w) == "try-error") {
-      return(c(NA, NA))
-      } else {
-    c(w$estimate, w$p.value)}  })
-  return(res)
-}
-res <- run_wilcoxon(Y1, Y2)
-</code></pre></div>
-</div></div></div></div>
-<div class="accodion-section">
-<a class="accordion-section-title" href="#sample_correlated-deseq2">sample_correlated->deseq2</a>
-<div id=sample_correlated-deseq2 class="accordion-section-content">
-<div class="tabs">
-<ul class="tab-links">
-<li class="active"><a href="#sample_correlated-deseq2_get_datar-704b3a95">get_data.R (704b3a95)</a></li>
-<li><a href="#sample_correlated-deseq2_methodsmeanexpressionr-4da5c31f">methodsMeanExpression.R (4da5c31f)</a></li>
-</ul>
-<div class="tab-content">
-<div id="sample_correlated-deseq2_get_datar-704b3a95" class="tab active">
-<pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
-counts = readRDS(data_file)
-sample_data <- function(counts, n, p) {
-    counts = as.matrix(counts)
-    nn = ncol(counts)
-    pp = nrow(counts)
-    n = min(nn, n)
-    p = min(pp, p)
-    genes_idx = sample(1:pp, p)
-    return(counts[genes_idx, sample(1:nn, n)])
-}
-get_sample_correlated <- function(counts, args) {
-  df <- sample_data(counts, args$n1+args$n2, args$p)
-  group <- c(rep(1, args$n1), rep(2, args$n2))
-  df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
-      df[g,sample(ncol(df))]
-  }))
-  x <- df.perm[,group==1]
-  y <- df.perm[,group==2]
-  return(list(x=x,
-              y=y))
-}
-get_sample_uncorrelated <- function(counts, args) {
-  df <- sample_data(counts, args$n1+args$n2, args$p)
-  group <- c(rep(1, args$n1), rep(2, args$n2))
-  x <- df[,group==1]
-  y <- df[,group==2]
-  return(list(x=x,
-              y=y))
-}
-splitted = get_sample_correlated(counts, args)
-</code></pre></div>
-<div id="sample_correlated-deseq2_methodsmeanexpressionr-4da5c31f" class="tab">
+<div id="sample_correlated-wilcoxon_methodsmeanexpressionr-92e81986" class="tab">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 library(DESeq2)
-library(BiocParallel)
+library(limma)
+#  suppressPackageStartupMessages(library(limma))
 run_deseq2 <- function(Y1, Y2) {
+  library(BiocParallel)
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -3325,6 +3407,25 @@ run_glm <- function(Y1, Y2, family) {
   results <- data.frame(t(results))
   return(results)
 }
+run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+  counts <- as.matrix(cbind(Y1, Y2))
+  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
+  design <- model.matrix(~factor(condition))
+  if (is.null(pseudocount)) {
+    log2CPM <- log2(counts)
+  } else {
+    log2CPM <- log2(counts + pseudocount)
+  }
+  weights <- voom.controlPseudocount(counts, design)
+  fit <- lmFit(log2CPM, design, weights = weights)
+  fit.ebayes <- eBayes(fit)
+  betahat <- fit.ebayes$coefficients[,2]
+  sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
+  pvalue <- fit.ebayes$p.value[,2]
+  df <- fit.ebayes$df.total
+  return(list(betahat=betahat, sebetahat=sebetahat,
+              df=df, pvalue = pvalue))
+}
 run_t_test <- function(Y1, Y2)
 {
   res <-  sapply(1:nrow(Y1), function(i) {
@@ -3344,7 +3445,39 @@ run_wilcoxon <- function(Y1, Y2) {
     c(w$estimate, w$p.value)}  })
   return(res)
 }
-res <- run_deseq2(Y1, Y2)
+voom.controlPseudocount <- function(counts, design,
+                                    pseudocount = .5,
+                                    pseudo_libsizes = 1,
+                                    span = .5) {
+  lib.size <- colSums(counts)
+  y <- t(log2(t(counts + pseudocount)/(lib.size + pseudo_libsizes) * 1e+06))
+  fit <- lmFit(y, design)
+  if (is.null(fit$Amean))  fit$Amean <- rowMeans(y, na.rm = TRUE)
+  sx <- fit$Amean + mean(log2(lib.size + 1)) - log2(1e+06)
+  sy <- sqrt(fit$sigma)
+  allzero <- rowSums(counts) == 0
+  if (any(allzero)) {
+    sx <- sx[!allzero]
+    sy <- sy[!allzero]
+  }
+  l <- lowess(sx, sy, f = span)
+  f <- approxfun(l, rule = 2)
+  if (fit$rank < ncol(design)) {
+    j <- fit$pivot[1:fit$rank]
+    fitted.values <- fit$coef[, j, drop = FALSE] %*% t(fit$design[,
+                                                                  j, drop = FALSE])
+  }
+  else {
+    fitted.values <- fit$coef %*% t(fit$design)
+  }
+  fitted.cpm <- 2^fitted.values
+  fitted.count <- 1e-06 * t(t(fitted.cpm) * (lib.size + pseudo_libsizes))
+  fitted.logcount <- log2(fitted.count)
+  w <- 1/f(fitted.logcount)^4
+  dim(w) <- dim(fitted.logcount)
+  return(w)
+}
+res <- run_wilcoxon(Y1, Y2)
 </code></pre></div>
 </div></div></div></div>
 <div class="accodion-section">
@@ -3352,11 +3485,11 @@ res <- run_deseq2(Y1, Y2)
 <div id=sample_uncorrelated-glm_pois class="accordion-section-content">
 <div class="tabs">
 <ul class="tab-links">
-<li class="active"><a href="#sample_uncorrelated-glm_pois_get_datar-2c9b7e79">get_data.R (2c9b7e79)</a></li>
-<li><a href="#sample_uncorrelated-glm_pois_methodsmeanexpressionr-e612c478">methodsMeanExpression.R (e612c478)</a></li>
+<li class="active"><a href="#sample_uncorrelated-glm_pois_get_datar-dee886ab">get_data.R (dee886ab)</a></li>
+<li><a href="#sample_uncorrelated-glm_pois_methodsmeanexpressionr-1503118d">methodsMeanExpression.R (1503118d)</a></li>
 </ul>
 <div class="tab-content">
-<div id="sample_uncorrelated-glm_pois_get_datar-2c9b7e79" class="tab active">
+<div id="sample_uncorrelated-glm_pois_get_datar-dee886ab" class="tab active">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 
 counts = readRDS(data_file)
@@ -3370,6 +3503,8 @@ sample_data <- function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -3381,6 +3516,8 @@ get_sample_correlated <- function(counts, args) {
               y=y))
 }
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -3390,10 +3527,13 @@ get_sample_uncorrelated <- function(counts, args) {
 }
 splitted = get_sample_uncorrelated(counts, args)
 </code></pre></div>
-<div id="sample_uncorrelated-glm_pois_methodsmeanexpressionr-e612c478" class="tab">
+<div id="sample_uncorrelated-glm_pois_methodsmeanexpressionr-1503118d" class="tab">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
+library(DESeq2)
+library(limma)
+#  suppressPackageStartupMessages(library(limma))
 run_deseq2 <- function(Y1, Y2) {
+  library(BiocParallel)
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -3432,6 +3572,25 @@ run_glm <- function(Y1, Y2, family) {
   results <- data.frame(t(results))
   return(results)
 }
+run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+  counts <- as.matrix(cbind(Y1, Y2))
+  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
+  design <- model.matrix(~factor(condition))
+  if (is.null(pseudocount)) {
+    log2CPM <- log2(counts)
+  } else {
+    log2CPM <- log2(counts + pseudocount)
+  }
+  weights <- voom.controlPseudocount(counts, design)
+  fit <- lmFit(log2CPM, design, weights = weights)
+  fit.ebayes <- eBayes(fit)
+  betahat <- fit.ebayes$coefficients[,2]
+  sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
+  pvalue <- fit.ebayes$p.value[,2]
+  df <- fit.ebayes$df.total
+  return(list(betahat=betahat, sebetahat=sebetahat,
+              df=df, pvalue = pvalue))
+}
 run_t_test <- function(Y1, Y2)
 {
   res <-  sapply(1:nrow(Y1), function(i) {
@@ -3450,6 +3609,38 @@ run_wilcoxon <- function(Y1, Y2) {
       } else {
     c(w$estimate, w$p.value)}  })
   return(res)
+}
+voom.controlPseudocount <- function(counts, design,
+                                    pseudocount = .5,
+                                    pseudo_libsizes = 1,
+                                    span = .5) {
+  lib.size <- colSums(counts)
+  y <- t(log2(t(counts + pseudocount)/(lib.size + pseudo_libsizes) * 1e+06))
+  fit <- lmFit(y, design)
+  if (is.null(fit$Amean))  fit$Amean <- rowMeans(y, na.rm = TRUE)
+  sx <- fit$Amean + mean(log2(lib.size + 1)) - log2(1e+06)
+  sy <- sqrt(fit$sigma)
+  allzero <- rowSums(counts) == 0
+  if (any(allzero)) {
+    sx <- sx[!allzero]
+    sy <- sy[!allzero]
+  }
+  l <- lowess(sx, sy, f = span)
+  f <- approxfun(l, rule = 2)
+  if (fit$rank < ncol(design)) {
+    j <- fit$pivot[1:fit$rank]
+    fitted.values <- fit$coef[, j, drop = FALSE] %*% t(fit$design[,
+                                                                  j, drop = FALSE])
+  }
+  else {
+    fitted.values <- fit$coef %*% t(fit$design)
+  }
+  fitted.cpm <- 2^fitted.values
+  fitted.count <- 1e-06 * t(t(fitted.cpm) * (lib.size + pseudo_libsizes))
+  fitted.logcount <- log2(fitted.count)
+  w <- 1/f(fitted.logcount)^4
+  dim(w) <- dim(fitted.logcount)
+  return(w)
 }
 res <- run_glm(Y1, Y2, family);            est <- res$Estimate;            se <- res$Std..Error;            p <- res$Pr
 </code></pre></div>
@@ -3459,11 +3650,11 @@ res <- run_glm(Y1, Y2, family);            est <- res$Estimate;            se <-
 <div id=sample_uncorrelated-glm_quasipois class="accordion-section-content">
 <div class="tabs">
 <ul class="tab-links">
-<li class="active"><a href="#sample_uncorrelated-glm_quasipois_get_datar-2c9b7e79">get_data.R (2c9b7e79)</a></li>
-<li><a href="#sample_uncorrelated-glm_quasipois_methodsmeanexpressionr-e612c478">methodsMeanExpression.R (e612c478)</a></li>
+<li class="active"><a href="#sample_uncorrelated-glm_quasipois_get_datar-dee886ab">get_data.R (dee886ab)</a></li>
+<li><a href="#sample_uncorrelated-glm_quasipois_methodsmeanexpressionr-1503118d">methodsMeanExpression.R (1503118d)</a></li>
 </ul>
 <div class="tab-content">
-<div id="sample_uncorrelated-glm_quasipois_get_datar-2c9b7e79" class="tab active">
+<div id="sample_uncorrelated-glm_quasipois_get_datar-dee886ab" class="tab active">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 
 counts = readRDS(data_file)
@@ -3477,6 +3668,8 @@ sample_data <- function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -3488,6 +3681,8 @@ get_sample_correlated <- function(counts, args) {
               y=y))
 }
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -3497,10 +3692,13 @@ get_sample_uncorrelated <- function(counts, args) {
 }
 splitted = get_sample_uncorrelated(counts, args)
 </code></pre></div>
-<div id="sample_uncorrelated-glm_quasipois_methodsmeanexpressionr-e612c478" class="tab">
+<div id="sample_uncorrelated-glm_quasipois_methodsmeanexpressionr-1503118d" class="tab">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
+library(DESeq2)
+library(limma)
+#  suppressPackageStartupMessages(library(limma))
 run_deseq2 <- function(Y1, Y2) {
+  library(BiocParallel)
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -3539,6 +3737,25 @@ run_glm <- function(Y1, Y2, family) {
   results <- data.frame(t(results))
   return(results)
 }
+run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+  counts <- as.matrix(cbind(Y1, Y2))
+  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
+  design <- model.matrix(~factor(condition))
+  if (is.null(pseudocount)) {
+    log2CPM <- log2(counts)
+  } else {
+    log2CPM <- log2(counts + pseudocount)
+  }
+  weights <- voom.controlPseudocount(counts, design)
+  fit <- lmFit(log2CPM, design, weights = weights)
+  fit.ebayes <- eBayes(fit)
+  betahat <- fit.ebayes$coefficients[,2]
+  sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
+  pvalue <- fit.ebayes$p.value[,2]
+  df <- fit.ebayes$df.total
+  return(list(betahat=betahat, sebetahat=sebetahat,
+              df=df, pvalue = pvalue))
+}
 run_t_test <- function(Y1, Y2)
 {
   res <-  sapply(1:nrow(Y1), function(i) {
@@ -3557,6 +3774,38 @@ run_wilcoxon <- function(Y1, Y2) {
       } else {
     c(w$estimate, w$p.value)}  })
   return(res)
+}
+voom.controlPseudocount <- function(counts, design,
+                                    pseudocount = .5,
+                                    pseudo_libsizes = 1,
+                                    span = .5) {
+  lib.size <- colSums(counts)
+  y <- t(log2(t(counts + pseudocount)/(lib.size + pseudo_libsizes) * 1e+06))
+  fit <- lmFit(y, design)
+  if (is.null(fit$Amean))  fit$Amean <- rowMeans(y, na.rm = TRUE)
+  sx <- fit$Amean + mean(log2(lib.size + 1)) - log2(1e+06)
+  sy <- sqrt(fit$sigma)
+  allzero <- rowSums(counts) == 0
+  if (any(allzero)) {
+    sx <- sx[!allzero]
+    sy <- sy[!allzero]
+  }
+  l <- lowess(sx, sy, f = span)
+  f <- approxfun(l, rule = 2)
+  if (fit$rank < ncol(design)) {
+    j <- fit$pivot[1:fit$rank]
+    fitted.values <- fit$coef[, j, drop = FALSE] %*% t(fit$design[,
+                                                                  j, drop = FALSE])
+  }
+  else {
+    fitted.values <- fit$coef %*% t(fit$design)
+  }
+  fitted.cpm <- 2^fitted.values
+  fitted.count <- 1e-06 * t(t(fitted.cpm) * (lib.size + pseudo_libsizes))
+  fitted.logcount <- log2(fitted.count)
+  w <- 1/f(fitted.logcount)^4
+  dim(w) <- dim(fitted.logcount)
+  return(w)
 }
 res <- run_glm(Y1, Y2, family);            est <- res$Estimate;            se <- res$Std..Error;            p <- res$Pr
 </code></pre></div>
@@ -3566,11 +3815,11 @@ res <- run_glm(Y1, Y2, family);            est <- res$Estimate;            se <-
 <div id=sample_uncorrelated-t_test class="accordion-section-content">
 <div class="tabs">
 <ul class="tab-links">
-<li class="active"><a href="#sample_uncorrelated-t_test_get_datar-2c9b7e79">get_data.R (2c9b7e79)</a></li>
-<li><a href="#sample_uncorrelated-t_test_methodsmeanexpressionr-fad8ae39">methodsMeanExpression.R (fad8ae39)</a></li>
+<li class="active"><a href="#sample_uncorrelated-t_test_get_datar-dee886ab">get_data.R (dee886ab)</a></li>
+<li><a href="#sample_uncorrelated-t_test_methodsmeanexpressionr-8754d7f8">methodsMeanExpression.R (8754d7f8)</a></li>
 </ul>
 <div class="tab-content">
-<div id="sample_uncorrelated-t_test_get_datar-2c9b7e79" class="tab active">
+<div id="sample_uncorrelated-t_test_get_datar-dee886ab" class="tab active">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 
 counts = readRDS(data_file)
@@ -3584,6 +3833,8 @@ sample_data <- function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -3595,6 +3846,8 @@ get_sample_correlated <- function(counts, args) {
               y=y))
 }
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -3604,10 +3857,13 @@ get_sample_uncorrelated <- function(counts, args) {
 }
 splitted = get_sample_uncorrelated(counts, args)
 </code></pre></div>
-<div id="sample_uncorrelated-t_test_methodsmeanexpressionr-fad8ae39" class="tab">
+<div id="sample_uncorrelated-t_test_methodsmeanexpressionr-8754d7f8" class="tab">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
+library(DESeq2)
+library(limma)
+#  suppressPackageStartupMessages(library(limma))
 run_deseq2 <- function(Y1, Y2) {
+  library(BiocParallel)
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -3646,6 +3902,25 @@ run_glm <- function(Y1, Y2, family) {
   results <- data.frame(t(results))
   return(results)
 }
+run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+  counts <- as.matrix(cbind(Y1, Y2))
+  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
+  design <- model.matrix(~factor(condition))
+  if (is.null(pseudocount)) {
+    log2CPM <- log2(counts)
+  } else {
+    log2CPM <- log2(counts + pseudocount)
+  }
+  weights <- voom.controlPseudocount(counts, design)
+  fit <- lmFit(log2CPM, design, weights = weights)
+  fit.ebayes <- eBayes(fit)
+  betahat <- fit.ebayes$coefficients[,2]
+  sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
+  pvalue <- fit.ebayes$p.value[,2]
+  df <- fit.ebayes$df.total
+  return(list(betahat=betahat, sebetahat=sebetahat,
+              df=df, pvalue = pvalue))
+}
 run_t_test <- function(Y1, Y2)
 {
   res <-  sapply(1:nrow(Y1), function(i) {
@@ -3664,6 +3939,38 @@ run_wilcoxon <- function(Y1, Y2) {
       } else {
     c(w$estimate, w$p.value)}  })
   return(res)
+}
+voom.controlPseudocount <- function(counts, design,
+                                    pseudocount = .5,
+                                    pseudo_libsizes = 1,
+                                    span = .5) {
+  lib.size <- colSums(counts)
+  y <- t(log2(t(counts + pseudocount)/(lib.size + pseudo_libsizes) * 1e+06))
+  fit <- lmFit(y, design)
+  if (is.null(fit$Amean))  fit$Amean <- rowMeans(y, na.rm = TRUE)
+  sx <- fit$Amean + mean(log2(lib.size + 1)) - log2(1e+06)
+  sy <- sqrt(fit$sigma)
+  allzero <- rowSums(counts) == 0
+  if (any(allzero)) {
+    sx <- sx[!allzero]
+    sy <- sy[!allzero]
+  }
+  l <- lowess(sx, sy, f = span)
+  f <- approxfun(l, rule = 2)
+  if (fit$rank < ncol(design)) {
+    j <- fit$pivot[1:fit$rank]
+    fitted.values <- fit$coef[, j, drop = FALSE] %*% t(fit$design[,
+                                                                  j, drop = FALSE])
+  }
+  else {
+    fitted.values <- fit$coef %*% t(fit$design)
+  }
+  fitted.cpm <- 2^fitted.values
+  fitted.count <- 1e-06 * t(t(fitted.cpm) * (lib.size + pseudo_libsizes))
+  fitted.logcount <- log2(fitted.count)
+  w <- 1/f(fitted.logcount)^4
+  dim(w) <- dim(fitted.logcount)
+  return(w)
 }
 res <- run_t_test(Y1, Y2)
 </code></pre></div>
@@ -3673,11 +3980,11 @@ res <- run_t_test(Y1, Y2)
 <div id=sample_uncorrelated-wilcoxon class="accordion-section-content">
 <div class="tabs">
 <ul class="tab-links">
-<li class="active"><a href="#sample_uncorrelated-wilcoxon_get_datar-2c9b7e79">get_data.R (2c9b7e79)</a></li>
-<li><a href="#sample_uncorrelated-wilcoxon_methodsmeanexpressionr-74c5adcd">methodsMeanExpression.R (74c5adcd)</a></li>
+<li class="active"><a href="#sample_uncorrelated-wilcoxon_get_datar-dee886ab">get_data.R (dee886ab)</a></li>
+<li><a href="#sample_uncorrelated-wilcoxon_methodsmeanexpressionr-92e81986">methodsMeanExpression.R (92e81986)</a></li>
 </ul>
 <div class="tab-content">
-<div id="sample_uncorrelated-wilcoxon_get_datar-2c9b7e79" class="tab active">
+<div id="sample_uncorrelated-wilcoxon_get_datar-dee886ab" class="tab active">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 
 counts = readRDS(data_file)
@@ -3691,6 +3998,8 @@ sample_data <- function(counts, n, p) {
     return(counts[genes_idx, sample(1:nn, n)])
 }
 get_sample_correlated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -3702,6 +4011,8 @@ get_sample_correlated <- function(counts, args) {
               y=y))
 }
 get_sample_uncorrelated <- function(counts, args) {
+  if (is.null(args$seed)) {args$seed <- 99}
+  set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -3711,118 +4022,13 @@ get_sample_uncorrelated <- function(counts, args) {
 }
 splitted = get_sample_uncorrelated(counts, args)
 </code></pre></div>
-<div id="sample_uncorrelated-wilcoxon_methodsmeanexpressionr-74c5adcd" class="tab">
-<pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
-run_deseq2 <- function(Y1, Y2) {
-  Y <- cbind(as.matrix(Y1), as.matrix(Y2))
-  n1 <- dim(Y1)[2]
-  n2 <- dim(Y2)[2]
-  x <- rep(c(1,2), times = c(n1, n2))
-  x <- factor(x)
-  if (sum(duplicated(colnames(Y))) > 0) {
-    colnames(Y) <- paste0("cell.", c(1:ncol(Y))) }
-  dds <- DESeqDataSetFromMatrix(countData = round(Y),
-                                colData = data.frame(condition = x),
-                                design = ~condition)
-  ncores_default <- detectCores()
-  if (ncores_default == 8) {
-    register(MulticoreParam(4))
-  } else {
-    register(MulticoreParam(ncores_default))
-  }
-  dds <- DESeq(dds, parallel = TRUE)
-  res <- results(dds, contrast = c("condition", levels(factor(x))[1],
-                                   levels(factor(x))[2]), alpha = 0.05);
-  return(list(pval = res$pvalue,
-              est = res$log2FoldChange,
-              se = res$lfcSE))
-}
-run_glm <- function(Y1, Y2, family) {
-  Y <- cbind(Y1, Y2)
-  x <- rep(c(0, 1), c(ncol(Y1), ncol(Y2)))
-  results <- apply(Y, 1, FUN=function(y){
-    fit_try <- try(glm(y~x, family=family))
-    if (any(class(fit_try) == "try-error")) {
-      res <- rep(NA,4)
-    } else {
-      res <- summary(fit_try)$coefficients[2,]
-    }
-    return(res[c(1, 2, 4)])
-  })
-  results <- data.frame(t(results))
-  return(results)
-}
-run_t_test <- function(Y1, Y2)
-{
-  res <-  sapply(1:nrow(Y1), function(i) {
-    t <- try(t.test(Y1[i,],Y2[i,]))
-    if(class(t) == "try-error") {
-      return(c(NA, NA))
-      } else {
-    c(t$estimate[1]-t$estimate[2],t$p.value) }})
-  return(res)
-}
-run_wilcoxon <- function(Y1, Y2) {
-  res <- sapply(1:nrow(Y1), function(i){
-    w <- try(wilcox.test(Y1[i,],Y2[i,], conf.int = TRUE))
-    if(class(w) == "try-error") {
-      return(c(NA, NA))
-      } else {
-    c(w$estimate, w$p.value)}  })
-  return(res)
-}
-res <- run_wilcoxon(Y1, Y2)
-</code></pre></div>
-</div></div></div></div>
-<div class="accodion-section">
-<a class="accordion-section-title" href="#sample_uncorrelated-deseq2">sample_uncorrelated->deseq2</a>
-<div id=sample_uncorrelated-deseq2 class="accordion-section-content">
-<div class="tabs">
-<ul class="tab-links">
-<li class="active"><a href="#sample_uncorrelated-deseq2_get_datar-2c9b7e79">get_data.R (2c9b7e79)</a></li>
-<li><a href="#sample_uncorrelated-deseq2_methodsmeanexpressionr-4da5c31f">methodsMeanExpression.R (4da5c31f)</a></li>
-</ul>
-<div class="tab-content">
-<div id="sample_uncorrelated-deseq2_get_datar-2c9b7e79" class="tab active">
-<pre><code class="language-r; line-numbers; left-trim; right-trim;">
-
-counts = readRDS(data_file)
-sample_data <- function(counts, n, p) {
-    counts = as.matrix(counts)
-    nn = ncol(counts)
-    pp = nrow(counts)
-    n = min(nn, n)
-    p = min(pp, p)
-    genes_idx = sample(1:pp, p)
-    return(counts[genes_idx, sample(1:nn, n)])
-}
-get_sample_correlated <- function(counts, args) {
-  df <- sample_data(counts, args$n1+args$n2, args$p)
-  group <- c(rep(1, args$n1), rep(2, args$n2))
-  df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
-      df[g,sample(ncol(df))]
-  }))
-  x <- df.perm[,group==1]
-  y <- df.perm[,group==2]
-  return(list(x=x,
-              y=y))
-}
-get_sample_uncorrelated <- function(counts, args) {
-  df <- sample_data(counts, args$n1+args$n2, args$p)
-  group <- c(rep(1, args$n1), rep(2, args$n2))
-  x <- df[,group==1]
-  y <- df[,group==2]
-  return(list(x=x,
-              y=y))
-}
-splitted = get_sample_uncorrelated(counts, args)
-</code></pre></div>
-<div id="sample_uncorrelated-deseq2_methodsmeanexpressionr-4da5c31f" class="tab">
+<div id="sample_uncorrelated-wilcoxon_methodsmeanexpressionr-92e81986" class="tab">
 <pre><code class="language-r; line-numbers; left-trim; right-trim;">
 library(DESeq2)
-library(BiocParallel)
+library(limma)
+#  suppressPackageStartupMessages(library(limma))
 run_deseq2 <- function(Y1, Y2) {
+  library(BiocParallel)
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
@@ -3861,6 +4067,25 @@ run_glm <- function(Y1, Y2, family) {
   results <- data.frame(t(results))
   return(results)
 }
+run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+  counts <- as.matrix(cbind(Y1, Y2))
+  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
+  design <- model.matrix(~factor(condition))
+  if (is.null(pseudocount)) {
+    log2CPM <- log2(counts)
+  } else {
+    log2CPM <- log2(counts + pseudocount)
+  }
+  weights <- voom.controlPseudocount(counts, design)
+  fit <- lmFit(log2CPM, design, weights = weights)
+  fit.ebayes <- eBayes(fit)
+  betahat <- fit.ebayes$coefficients[,2]
+  sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
+  pvalue <- fit.ebayes$p.value[,2]
+  df <- fit.ebayes$df.total
+  return(list(betahat=betahat, sebetahat=sebetahat,
+              df=df, pvalue = pvalue))
+}
 run_t_test <- function(Y1, Y2)
 {
   res <-  sapply(1:nrow(Y1), function(i) {
@@ -3880,7 +4105,39 @@ run_wilcoxon <- function(Y1, Y2) {
     c(w$estimate, w$p.value)}  })
   return(res)
 }
-res <- run_deseq2(Y1, Y2)
+voom.controlPseudocount <- function(counts, design,
+                                    pseudocount = .5,
+                                    pseudo_libsizes = 1,
+                                    span = .5) {
+  lib.size <- colSums(counts)
+  y <- t(log2(t(counts + pseudocount)/(lib.size + pseudo_libsizes) * 1e+06))
+  fit <- lmFit(y, design)
+  if (is.null(fit$Amean))  fit$Amean <- rowMeans(y, na.rm = TRUE)
+  sx <- fit$Amean + mean(log2(lib.size + 1)) - log2(1e+06)
+  sy <- sqrt(fit$sigma)
+  allzero <- rowSums(counts) == 0
+  if (any(allzero)) {
+    sx <- sx[!allzero]
+    sy <- sy[!allzero]
+  }
+  l <- lowess(sx, sy, f = span)
+  f <- approxfun(l, rule = 2)
+  if (fit$rank < ncol(design)) {
+    j <- fit$pivot[1:fit$rank]
+    fitted.values <- fit$coef[, j, drop = FALSE] %*% t(fit$design[,
+                                                                  j, drop = FALSE])
+  }
+  else {
+    fitted.values <- fit$coef %*% t(fit$design)
+  }
+  fitted.cpm <- 2^fitted.values
+  fitted.count <- 1e-06 * t(t(fitted.cpm) * (lib.size + pseudo_libsizes))
+  fitted.logcount <- log2(fitted.count)
+  w <- 1/f(fitted.logcount)^4
+  dim(w) <- dim(fitted.logcount)
+  return(w)
+}
+res <- run_wilcoxon(Y1, Y2)
 </code></pre></div>
 </div></div></div></div>
 
