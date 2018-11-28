@@ -149,7 +149,7 @@ plotQQ <- function(res, seed=1, sample_size=50*2, title_label=NULL,
 ```{r}
 library(dscrutils)
 #setwd("~/Dropbox/GitHub/dsc-log-fold-change/dsc")
-dir_dsc <- "/Users/joycehsiao/Dropbox/GitHub/dsc-log-fold-change/dsc/benchmark"
+dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark"
 out <- dscquery(dir_dsc, 
                 c("get_data", "get_data.seed",
                   "get_data.n1", "get_data.n2", "method", "method.p"))

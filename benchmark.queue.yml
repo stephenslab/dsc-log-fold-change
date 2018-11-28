@@ -1,0 +1,48 @@
+hosts:
+  localhost:
+    address: localhost
+    paths:
+      home: /home/{user_name}
+  midway2:
+    description: UChicago RCC cluster Midway 2
+    address: localhost
+    paths:
+      home: /home/joycehsiao
+    queue_type: pbs
+    status_check_interval: 60
+    max_running_jobs: 40
+    max_cores: 40
+    max_walltime: '36:00:00'
+    max_mem: 64G
+    job_template: '#!/bin/bash
+
+      #SBATCH --time={walltime}
+
+      #{partition}
+
+      #{account}
+
+      #SBATCH --nodes=1
+
+      #SBATCH --ntasks-per-node={cores}
+
+      #SBATCH --mem-per-cpu={mem//10**9}G
+
+      #SBATCH --job-name={job_name}
+
+      #SBATCH --output={cur_dir}/.sos/{job_name}.stdout
+
+      #SBATCH --error={cur_dir}/.sos/{job_name}.stderr
+
+      cd {cur_dir}
+
+      module load R/3.5.1
+
+      sos execute {task} -v {verbosity} -s {sig_mode}'
+    partition: SBATCH --partition=broadwl
+    account: SBATCH --partition=mstephens
+    submit_cmd: sbatch {job_file}
+    submit_cmd_output: Submitted batch job {job_id}
+    status_cmd: squeue --job {job_id}
+    kill_cmd: scancel {job_id}
+localhost: localhost
