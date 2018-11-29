@@ -1,7 +1,7 @@
 sample_correlated: R(counts = readRDS(${data_file})) + \
                get_data.R + \
                R(splitted = get_sample_correlated(counts, args))
-  seed: R{1:1000}
+  seed: R{1:100}
   n1, n2: (50, 50), (300, 300)
   p: 1000
   @ALIAS: args = List(!data_file, !meta_file)
