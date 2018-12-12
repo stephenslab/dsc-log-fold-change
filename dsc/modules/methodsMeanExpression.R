@@ -1,11 +1,14 @@
 
 
+
+
 run_deseq2 <- function(Y1, Y2) {
 
   library(DESeq2)
-  library(BiocParallel)
+#  library(BiocParallel)
 
   Y <- cbind(as.matrix(Y1), as.matrix(Y2))
+
   n1 <- dim(Y1)[2]
   n2 <- dim(Y2)[2]
   x <- rep(c(1,2), times = c(n1, n2))
@@ -14,20 +17,18 @@ run_deseq2 <- function(Y1, Y2) {
   if (sum(duplicated(colnames(Y))) > 0) {
     colnames(Y) <- paste0("cell.", c(1:ncol(Y))) }
 
+
   dds <- DESeqDataSetFromMatrix(countData = round(Y),
                                 colData = data.frame(condition = x),
                                 design = ~condition)
 
-  ncores_default <- detectCores()
-  if (ncores_default == 8) {
-    register(MulticoreParam(4))
-  } else {
-    register(MulticoreParam(ncores_default))
-  }
-  dds <- DESeq(dds, parallel = TRUE)
-  res <- results(dds, contrast = c("condition", levels(factor(x))[1],
-                                   levels(factor(x))[2]), alpha = 0.05);
+  dds <- estimateSizeFactors(dds,type="poscounts")
+  dds <- estimateDispersions(dds, minmu = 1e-3)
+  dds <- nbinomLRT(dds, minmu=1e-3, reduced=~1)
+  res <- results(dds, name="condition_2_vs_1")
 
+    # res <- results(dds, contrast = c("condition", levels(factor(x))[1],
+    #                                levels(factor(x))[2]), alpha = 0.05);
   return(list(pval = res$pvalue,
               est = res$log2FoldChange,
               se = res$lfcSE))
@@ -35,8 +36,57 @@ run_deseq2 <- function(Y1, Y2) {
 
 
 
+run_edger <- function(Y1, Y2) {
+
+  library(edgeR)
+
+  Y <- cbind(as.matrix(Y1), as.matrix(Y2))
+  n1 <- dim(Y1)[2]
+  n2 <- dim(Y2)[2]
+  x <- rep(c(1,2), times = c(n1, n2))
+  x <- factor(x)
+
+
+  if (sum(duplicated(colnames(Y))) > 0) {
+    colnames(Y) <- paste0("cell.", c(1:ncol(Y))) }
+  if (is.null(rownames(Y))) {
+    rownames(Y) <- paste0("gene.", c(1:nrow(Y))) }
+
+  #<--------------------------------------
+  # Make "DGEList" object
+  dge <- edgeR::DGEList(counts = Y,
+                        group = x,
+                        genes = rownames(Y))
+
+  dge <- edgeR::calcNormFactors(dge)
+
+  # estimate dispersion
+  dge <- edgeR::estimateDisp(dge, design = model.matrix(~x))
+
+  # Run DE analysis; dispersion = NULL will extract tagwise (genewise) dispersion estimates
+  # for DE analysis
+  fit <- edgeR::glmFit(dge, dispersion = NULL)
+
+  # Run LRT test
+  lrt <- edgeR::glmLRT(fit, coef = 2)
+
+  betahat <- lrt$coefficients[,2]
+  pvalue <- lrt$table$PValue
+
+  res <- list(log2FoldChange=betahat,
+              pvalue=pvalue)
+
+  return(list(pval = res$pvalue,
+              est = res$log2FoldChange))
+}
+
+
+
+
+
 run_glm <- function(Y1, Y2, family) {
   Y <- cbind(Y1, Y2)
+
   x <- rep(c(0, 1), c(ncol(Y1), ncol(Y2)))
   results <- apply(Y, 1, FUN=function(y){
     fit_try <- try(glm(y~x, family=family))
@@ -52,43 +102,28 @@ run_glm <- function(Y1, Y2, family) {
 }
 
 
-run_limma_voom <- function(Y1, Y2, pseudocount = .5){
+run_limma_voom <- function(Y1, Y2){
 
   library(limma)
-  counts <- as.matrix(cbind(Y1, Y2))
+  Y <- as.matrix(cbind(Y1, Y2))
+
   condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
 
   design <- model.matrix(~factor(condition))
 
-  # compute log2CPM
-  if (is.null(pseudocount)) {
-    log2CPM <- log2(counts)
-  } else {
-    log2CPM <- log2(counts + pseudocount)
-  }
-
-#  suppressPackageStartupMessages(library(limma))
-  # don't apply normalization methods (eg., TMM, quantile)
-  # the default setting of voom.controlPseudocount is the same as
-  # in voom package; but here we made pseudocount and pseudo library size
-  # adjustable by users
-  weights <- voom.controlPseudocount(counts, design)
-  fit <- lmFit(log2CPM, design, weights = weights)
+  dge <- DGEList(Y)
+  dge <- edgeR::calcNormFactors(dge)
+  v <- voom(dge,design,plot=FALSE)
+  fit <- lmFit(v,design)
   fit.ebayes <- eBayes(fit)
 
-  # given that the condition is a binary vector
+
+    # given that the condition is a binary vector
   # extract the coefficient corresponds to the difference between the two conditions
   betahat <- fit.ebayes$coefficients[,2]
   sebetahat <- with(fit.ebayes, stdev.unscaled[,2]*sigma)
   pvalue <- fit.ebayes$p.value[,2]
   df <- fit.ebayes$df.total
-
-  # # if save_modelFit, then output will include the original model fit
-  # if (control$save_modelFit) {
-  #   fit <- fit.ebayes
-  # } else {
-  #   fit <- NULL
-  # }
 
   return(list(betahat=betahat, sebetahat=sebetahat,
               df=df, pvalue = pvalue))
@@ -96,10 +131,56 @@ run_limma_voom <- function(Y1, Y2, pseudocount = .5){
 
 
 
+run_mast <- function(Y1, Y2,
+                     pseudocount=1) {
+
+  library(MAST)
+  Y <- cbind(as.matrix(Y1), as.matrix(Y2))
+
+  n1 <- dim(Y1)[2]
+  n2 <- dim(Y2)[2]
+
+  x <- rep(c(1,2), times = c(n1, n2))
+  x <- factor(x)
+  if (sum(duplicated(colnames(Y))) > 0) {
+    colnames(Y) <- paste0("cell.", c(1:ncol(Y))) }
+  if (is.null(rownames(Y))) {
+    rownames(Y) <- paste0("gene.", c(1:nrow(Y))) }
+  # compute log2CPM
+  log2CPM <- log2(Y + pseudocount)
+
+  # make data.frame into singleCellAssay object
+  colData <- data.frame(condition = x, row.names = colnames(Y))
+  rowData <- data.frame(gene = rownames(Y))
+  sca <- suppressMessages(MAST::FromMatrix(log2CPM, colData, rowData))
+
+  # calculate cellualr detection rate; normalized to mean 0 and sd 1
+  colData(sca)$cdr.normed <- scale(colSums(assay(sca) > 0))
+  # the default method for fitting is bayesGLM
+  fit <- suppressMessages(MAST::zlm(~ condition + cdr.normed,
+                                    sca=sca))
+
+  # LRT test for the significance of the condition effect
+  lrt <-  suppressMessages(MAST::lrTest(fit, "condition"))
+
+  # extract p.value from their "hurdle" model
+  pvalue <- lrt[,3,3]
+
+  # extract effect size, standard error, and df from the non-zero component
+  betahat <- fit@coefC[,2]
+  setbetahat <- sqrt(sapply(1:dim(fit@vcovC)[3], function(i) {
+    diag(fit@vcovC[,,i])[2]} ) )
+  df <- fit@df.resid[,1]
+
+  return(list(betahat=betahat,
+              sebetahat=setbetahat,
+              df=df,
+              pval=pvalue))
+}
 
 run_t_test <- function(Y1, Y2)
 {
-  res <-  sapply(1:nrow(Y1), function(i) {
+    res <-  sapply(1:nrow(Y1), function(i) {
     t <- try(t.test(Y1[i,],Y2[i,]))
     if(class(t) == "try-error") {
       return(c(NA, NA))
@@ -109,6 +190,7 @@ run_t_test <- function(Y1, Y2)
 }
 
 run_wilcoxon <- function(Y1, Y2) {
+
   res <- sapply(1:nrow(Y1), function(i){
     w <- try(wilcox.test(Y1[i,],Y2[i,], conf.int = TRUE))
     if(class(w) == "try-error") {
@@ -119,6 +201,80 @@ run_wilcoxon <- function(Y1, Y2) {
 }
 
 
+run_zinbwave_deseq2 <- function(Y1, Y2){
+  library(DESeq2)
+  library(zinbwave)
+
+  Y <- cbind(as.matrix(Y1), as.matrix(Y2))
+
+  n1 <- dim(Y1)[2]
+  n2 <- dim(Y2)[2]
+  x <- rep(c(1,2), times = c(n1, n2))
+  x <- factor(x)
+
+  if (sum(duplicated(colnames(Y))) > 0) {
+    colnames(Y) <- paste0("cell.", c(1:ncol(Y))) }
+  if (is.null(rownames(Y))) {
+    rownames(Y) <- paste0("gene.", c(1:nrow(Y))) }
+
+  condition <- x
+  design <- model.matrix(~ condition)
+
+  # compute zinbwave weights
+  zinb <- zinbFit(Y, X = design, epsilon = 1e12)
+  weights <- computeObservationalWeights(zinb, Y)
+
+  # use DESeq2
+  d <- DESeqDataSetFromMatrix(Y,
+                              colData= DataFrame(data.frame(condition=condition)),
+                              design= ~ condition)
+  d <- estimateSizeFactors(d, type="poscounts")
+  dimnames(weights) = NULL
+  assays(d)[["weights"]] = weights
+  d <- estimateDispersions(d, minmu = 1e-3)
+  #dse = nbinomWaldTest(dse, betaPrior=TRUE, useT=TRUE, df=rowSums(weights)-2, minmu = 1e-3)
+  d <- nbinomLRT(d, minmu=1e-3, reduced=~1)
+  res <- results(d, name="condition_2_vs_1")
+
+  return(list(pval = res$pvalue,
+              betahat = res$log2FoldChange) )
+}
+
+
+run_zinbwave_edger <- function(Y1, Y2){
+  library(edgeR)
+  library(zinbwave)
+
+  Y <- cbind(as.matrix(Y1), as.matrix(Y2))
+
+  n1 <- dim(Y1)[2]
+  n2 <- dim(Y2)[2]
+  x <- rep(c(1,2), times = c(n1, n2))
+  x <- factor(x)
+
+  if (sum(duplicated(colnames(Y))) > 0) {
+    colnames(Y) <- paste0("cell.", c(1:ncol(Y))) }
+  if (is.null(rownames(Y))) {
+    rownames(Y) <- paste0("gene.", c(1:nrow(Y))) }
+
+  condition <- x
+  design <- model.matrix(~ condition)
+
+  # compute zinbwave weights
+  zinb <- zinbFit(Y, X = design, epsilon = 1e12)
+  weights <- computeObservationalWeights(zinb, Y)
+  # use -edgeR
+  d <- DGEList(Y)
+  d <- edgeR::calcNormFactors(d)
+  d$weights <- weights
+  d <- estimateDisp(d, design)
+  fit <- glmFit(d,design)
+  lrt <- glmWeightedF(fit,coef=2, independentFiltering = TRUE)
+  pvalues <- lrt$table$PValue
+
+  return(list(pval = pvalues,
+              betahat = lrt$table$logFC) )
+}
 
 
 ###############################################################
@@ -180,3 +336,6 @@ voom.controlPseudocount <- function(counts, design,
 
   return(w)
 }
+
+
+
