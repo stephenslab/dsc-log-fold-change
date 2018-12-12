@@ -1,0 +1,164 @@
+---
+title: "Curate PBMC data used for type I error assessment in Van den Berg et al. 2018"
+author: "Joyce Hsiao"
+date: "2018-12-11"
+output: workflowr::wflow_html
+---
+
+```{r options, echo=FALSE, results="hide",message=FALSE, error=FALSE, include=FALSE, autodep=TRUE, warning=FALSE}
+knitr::opts_chunk$set(fig.align="center", error=FALSE, message=FALSE, warning=FALSE)
+```
+
+## Introduction
+
+
+* Reproduce the experimental data used in Van den Berge et al., 2018 for creating PBMC null datasets. 
+
+* Data includes 2,638 samples and 13,713 genes.
+
+
+---
+
+## Steps
+
+Same steps as in `https://github.com/statOmics/zinbwaveZinger/blob/master/realdata/createdata/createDataObject.Rmd`. 
+
+
+Reading in data.
+
+```{r init, message=FALSE, eval=F}
+library(Seurat)
+library(dplyr)
+library(Matrix)
+# Load the PBMC dataset
+pbmc.data <- Read10X(data.dir = "/project/mstephens/data/external_public_supp/pbmc3k_filtered_gene_bc_matrices")
+
+pbmc <- CreateSeuratObject(raw.data = pbmc.data, min.cells = 3, min.genes = 200, project = "10X_PBMC")
+```
+
+
+
+QC and selecting cells for further analysis
+
+```{r qc, results='hide', fig.height=7,fig.width=13, eval=F}
+mito.genes <- grep(pattern = "^MT-", x = rownames(x = pbmc@data), value = TRUE)
+percent.mito <- Matrix::colSums(pbmc@raw.data[mito.genes, ]) / Matrix::colSums(pbmc@raw.data)
+# AddMetaData adds columns to object@meta.data, and is a great place to stash QC stats
+pbmc <- AddMetaData(object = pbmc, metadata = percent.mito, col.name = "percent.mito")
+
+pbmc <- FilterCells(object = pbmc, subset.names = c("nGene", "percent.mito"), low.thresholds = c(200, -Inf), high.thresholds = c(2500, 0.05))
+```
+
+Normalizing the data
+
+```{r normalize, results='hide', eval=F}
+pbmc <- NormalizeData(object = pbmc, normalization.method = "LogNormalize", scale.factor = 1e4)
+```
+
+Detection of variable genes across the single cells
+
+```{r var_genes, fig.height=7, fig.width=11, results='hide', eval=F}
+pbmc <- FindVariableGenes(object = pbmc, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.0125, x.high.cutoff = 3, y.cutoff = 0.5)
+
+length(x = pbmc@var.genes)
+```
+
+Scaling the data and removing unwanted sources of variation
+
+
+```{r regress, fig.height=7, fig.width=11, results='hide', eval=F}
+pbmc <- ScaleData(object = pbmc, vars.to.regress = c("nUMI", "percent.mito"))
+```
+
+Perform linear dimensional reduction
+
+```{r pca, eval=F}
+pbmc <- RunPCA(object = pbmc, pc.genes = pbmc@var.genes, do.print = TRUE, pcs.print = 1:5, genes.print = 5)
+```
+
+Cluster the cells
+
+```{r cluster, fig.height=5, fig.width=7, eval=F}
+pbmc <- FindClusters(object = pbmc, reduction.type = "pca", dims.use = 1:10, resolution = 0.6, print.output = 0, save.SNN = TRUE)
+```
+
+
+Run Non-linear dimensional reduction (tSNE)
+
+```{r tsne, fig.height=5, fig.width=7, message=FALSE, warnings=FALSE, eval=F}
+pbmc <- RunTSNE(object = pbmc, dims.use = 1:10, do.fast = TRUE)
+```
+
+
+Assigning cell type identity to clusters
+
+Cluster ID | Markers       | Cell Type
+-----------|---------------|----------
+0          | IL7R          | CD4 T cells
+1          | CD14, LYZ     | CD14+ Monocytes
+2          | MS4A1         | B cells
+3          | CD8A          | CD8 T cells
+4          | FCGR3A, MS4A7 | FCGR3A+ Monocytes
+5          | GNLY, NKG7    | NK cells
+6          | FCER1A, CST3  | Dendritic Cells
+7          | PPBP          | Megakaryocytes
+
+
+```{r labelplot, fig.height=5, fig.width=9, warning = FALSE, eval=F}
+current.cluster.ids <- c(0, 1, 2, 3, 4, 5, 6, 7)
+new.cluster.ids <- c("CD4 T cells", "CD14+ Monocytes", "B cells", "CD8 T cells", "FCGR3A+ Monocytes", "NK cells", "Dendritic cells", "Megakaryocytes")
+pbmc@ident <- plyr::mapvalues(x = pbmc@ident, from = current.cluster.ids, to = new.cluster.ids)
+```
+
+Further subdivisions within cell types
+
+```{r investigate_split, fig.width=15, eval=F}
+# First lets stash our identities for later
+pbmc <- StashIdent(object = pbmc, save.name = "ClusterNames_0.6")
+# Note that if you set save.snn=T above, you don't need to recalculate the SNN, and can simply put: 
+# pbmc <- FindClusters(pbmc,resolution = 0.8)
+pbmc <- FindClusters(object = pbmc, reduction.type = "pca", dims.use = 1:10, resolution = 0.8, print.output = FALSE)
+```
+
+
+Create SE object
+
+```{r, eval=F}
+library(SingleCellExperiment)
+# use raw data as input for zinbwave but keep only non filtered cells
+# and most variable genes indentified by seurat
+keepcells = colnames(pbmc@data)
+counts = pbmc@raw.data[, keepcells]
+# zinbwave does not want dgTMatrix as input
+counts = as.matrix(counts)
+counts = counts[rowSums(counts) > 0, ]
+#keepcells = as.integer(pbmc@ident) %in% 1:2
+#counts = counts[, keepcells]
+# coldata
+clusters = as.integer(pbmc@ident)
+#clusters = clusters[clusters %in% 1:2]
+cData = data.frame(seurat = clusters)
+rownames(cData) = colnames(counts)
+# rowdata
+rData = data.frame(seuratVarGenes = rownames(counts) %in% pbmc@var.genes)
+rownames(rData) = rownames(counts)
+# create sce object
+core = SingleCellExperiment(assays = list(counts = counts),
+                            colData = cData, rowData = rData)
+
+unloadNamespace("Seurat")
+saveRDS(core, file = '../dsc/data/pbmc.rds')
+
+saveRDS(assay(pbmc), file = '../dsc/data/pbmc_counts.rds')
+```
+
+Load pre-computed object.
+
+```{r, eval=F}
+pbmc <- readRDS(file = '../dsc/data/pbmc.rds')
+
+pbmc
+```
+
+
+
