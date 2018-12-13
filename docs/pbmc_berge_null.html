@@ -245,11 +245,12 @@ div.section {
 <ul>
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#steps">Steps</a></li>
+<li><a href="#outputting-objects">Outputting objects</a></li>
 <li><a href="#session-information">Session information</a></li>
 </ul>
 </div>
 
-<p><strong>Last updated:</strong> 2018-12-12</p>
+<p><strong>Last updated:</strong> 2018-12-13</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
@@ -278,7 +279,7 @@ div.section {
 </li>
 <li>
 <details>
-<p><summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/d27647950c533e953dd757b9ee9893070555ca51" target="_blank">d276479</a> </summary></p>
+<p><summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/8ff0fcd79f1f07db9c6feff20781f469b0f50732" target="_blank">8ff0fcd</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
@@ -295,10 +296,14 @@ Untracked files:
     Untracked:  dsc/config.yaml
     Untracked:  dsc/data/pbmc.rds
     Untracked:  dsc/data/pbmc_counts.rds
+    Untracked:  dsc/data/pbmc_counts_sub.rds
     Untracked:  dsc/modules/process_data.R
     Untracked:  dsc/modules/process_data.dsc
+    Untracked:  dsc/modules/sim_data.R
+    Untracked:  dsc/modules/sim_data.dsc
     Untracked:  dsc/monitor.py
     Untracked:  dsc/monitor_output/
+    Untracked:  dsc/power_berge.dsc
     Untracked:  dsc/type1_berge.dsc
     Untracked:  dsc/type1_simple.dsc
 
@@ -306,13 +311,9 @@ Unstaged changes:
     Modified:   analysis/index.Rmd
     Modified:   analysis/test.Rmd
     Modified:   dsc/benchmark.dsc
-    Deleted:    dsc/benchmark.queue.yml
-    Deleted:    dsc/code/config.yaml
     Modified:   dsc/data/README.md
     Modified:   dsc/modules/get_data.R
     Modified:   dsc/modules/get_data.dsc
-    Modified:   dsc/modules/methodsMeanExpression.R
-    Modified:   dsc/modules/methodsMeanExpression.dsc
 
 </code></pre>
 Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
@@ -343,6 +344,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/8ff0fcd79f1f07db9c6feff20781f469b0f50732/analysis/pbmc_berge_null.Rmd" target="_blank">8ff0fcd</a>
+</td>
+<td style="text-align:left;">
+Joyce Hsiao
+</td>
+<td style="text-align:left;">
+2018-12-13
+</td>
+<td style="text-align:left;">
+add data for power calculation
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/1b32c201d83613c88d9b0cdeadabc92228d9c0dc/docs/pbmc_berge_null.html" target="_blank">1b32c20</a>
+</td>
+<td style="text-align:left;">
+Joyce Hsiao
+</td>
+<td style="text-align:left;">
+2018-12-12
+</td>
+<td style="text-align:left;">
+Build site.
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -493,10 +528,18 @@ unloadNamespace(&quot;Seurat&quot;)
 saveRDS(core, file = &#39;../dsc/data/pbmc.rds&#39;)
 
 saveRDS(assay(pbmc), file = &#39;../dsc/data/pbmc_counts.rds&#39;)</code></pre>
-<p>Load pre-computed object.</p>
+</div>
+<div id="outputting-objects" class="section level2">
+<h2>Outputting objects</h2>
+<p>All filtered samples</p>
 <pre class="r"><code>pbmc &lt;- readRDS(file = &#39;../dsc/data/pbmc.rds&#39;)
 
 pbmc</code></pre>
+<p>Samples from cluster 1 and 2</p>
+<pre class="r"><code>pbmc &lt;- readRDS(file = &#39;../dsc/data/pbmc.rds&#39;)
+
+pbmc_counts_sub &lt;- assay(pbmc[,colData(pbmc)$seurat==1 | colData(pbmc)$seurat==2 ] )
+saveRDS(pbmc_counts_sub, file = &#39;../dsc/data/pbmc_counts_sub.rds&#39;)</code></pre>
 </div>
 <div id="session-information" class="section level2">
 <h2>Session information</h2>
