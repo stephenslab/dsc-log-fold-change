@@ -152,7 +152,10 @@ saveRDS(core, file = '../dsc/data/pbmc.rds')
 saveRDS(assay(pbmc), file = '../dsc/data/pbmc_counts.rds')
 ```
 
-Load pre-computed object.
+
+## Outputting objects
+
+All filtered samples
 
 ```{r, eval=F}
 pbmc <- readRDS(file = '../dsc/data/pbmc.rds')
@@ -161,4 +164,12 @@ pbmc
 ```
 
 
+Samples from cluster 1 and 2
+
+```{r, eval=F}
+pbmc <- readRDS(file = '../dsc/data/pbmc.rds')
+
+pbmc_counts_sub <- assay(pbmc[,colData(pbmc)$seurat==1 | colData(pbmc)$seurat==2 ] )
+saveRDS(pbmc_counts_sub, file = '../dsc/data/pbmc_counts_sub.rds')
+```
 
