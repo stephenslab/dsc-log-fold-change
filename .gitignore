@@ -3,4 +3,5 @@ dsc/benchmark/*
 .Rproj.user
 .Rhistory
 .Rprofile
+.rds
 
