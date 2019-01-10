@@ -13,7 +13,7 @@
 
 <meta name="date" content="2018-11-15" />
 
-<title>Evaluate two-sample tests</title>
+<title>Type I error control evaluation</title>
 
 <script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -235,7 +235,7 @@ div.section {
 
 
 
-<h1 class="title toc-ignore">Evaluate two-sample tests</h1>
+<h1 class="title toc-ignore">Type I error control evaluation</h1>
 <h4 class="author"><em>jhsiao999</em></h4>
 <h4 class="date"><em>2018-11-15</em></h4>
 
@@ -244,96 +244,88 @@ div.section {
 <div id="TOC">
 <ul>
 <li><a href="#overview">Overview</a></li>
-<li><a href="#results">Results</a></li>
+<li><a href="#implementationcode">Implementation/Code</a></li>
+<li><a href="#analysis">Analysis</a></li>
+<li><a href="#codes-and-packages">Codes and Packages</a></li>
+<li><a href="#results-on-data-1-simple-case">Results on Data 1: simple case</a></li>
+<li><a href="#results-on-data-2">Results on Data 2:</a></li>
 <li><a href="#session-information">Session information</a></li>
 </ul>
 </div>
 
-<p><strong>Last updated:</strong> 2018-11-17</p>
+<p><strong>Last updated:</strong> 2019-01-09</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>R Markdown file:</strong> up-to-date </summary></p>
+<details>
+<p><summary> <strong style="color:blue;">✔</strong> <strong>R Markdown file:</strong> up-to-date </summary></p>
 <p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Environment:</strong> empty </summary></p>
+<details>
+<p><summary> <strong style="color:blue;">✔</strong> <strong>Environment:</strong> empty </summary></p>
 <p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Seed:</strong> <code>set.seed(20181115)</code> </summary></p>
+<details>
+<p><summary> <strong style="color:blue;">✔</strong> <strong>Seed:</strong> <code>set.seed(20181115)</code> </summary></p>
 <p>The command <code>set.seed(20181115)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Session information:</strong> recorded </summary></p>
+<details>
+<p><summary> <strong style="color:blue;">✔</strong> <strong>Session information:</strong> recorded </summary></p>
 <p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/afbb6872374797a1b19391c8e3166e3cc22a3892" target="_blank">afbb687</a> </summary></p>
+<details>
+<p><summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/c1732527aa307cd9e00a58f32a9d552bbc1a5404" target="_blank">c173252</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
-    Ignored:    .DS_Store
     Ignored:    .Rhistory
-    Ignored:    .Rprofile
     Ignored:    .Rproj.user/
     Ignored:    .sos/
-    Ignored:    analysis/.DS_Store
     Ignored:    analysis/.sos/
-    Ignored:    dsc/.DS_Store
+    Ignored:    analysis/figure/
     Ignored:    dsc/.sos/
-    Ignored:    dsc/benchmark/.DS_Store
-    Ignored:    dsc/modules/.DS_Store
 
 Untracked files:
-    Untracked:  dsc/benchmark/DESeq2/sample_correlated_1_deseq2_1.rds
-    Untracked:  dsc/benchmark/DESeq2/sample_correlated_1_deseq2_1.stderr
-    Untracked:  dsc/benchmark/DESeq2/sample_correlated_2_deseq2_1.rds
-    Untracked:  dsc/benchmark/DESeq2/sample_correlated_2_deseq2_1.stderr
-    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_1_deseq2_1.rds
-    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_1_deseq2_1.stderr
-    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_2_deseq2_1.rds
-    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_2_deseq2_1.stderr
-    Untracked:  dsc/benchmark/glm_pois/sample_correlated_1_glm_pois_1.rds
-    Untracked:  dsc/benchmark/glm_pois/sample_correlated_2_glm_pois_1.rds
-    Untracked:  dsc/benchmark/glm_pois/sample_uncorrelated_1_glm_pois_1.rds
-    Untracked:  dsc/benchmark/glm_pois/sample_uncorrelated_2_glm_pois_1.rds
-    Untracked:  dsc/benchmark/glm_quasipois/sample_correlated_1_glm_quasipois_1.rds
-    Untracked:  dsc/benchmark/glm_quasipois/sample_correlated_2_glm_quasipois_1.rds
-    Untracked:  dsc/benchmark/glm_quasipois/sample_uncorrelated_1_glm_quasipois_1.rds
-    Untracked:  dsc/benchmark/glm_quasipois/sample_uncorrelated_2_glm_quasipois_1.rds
-    Untracked:  dsc/benchmark/sample_correlated/
-    Untracked:  dsc/benchmark/sample_uncorrelated/
-    Untracked:  dsc/benchmark/t_test/sample_correlated_1_t_test_1.rds
-    Untracked:  dsc/benchmark/t_test/sample_correlated_2_t_test_1.rds
-    Untracked:  dsc/benchmark/t_test/sample_uncorrelated_1_t_test_1.rds
-    Untracked:  dsc/benchmark/t_test/sample_uncorrelated_2_t_test_1.rds
-    Untracked:  dsc/benchmark/wilcoxon/
+    Untracked:  analysis/sim_power_berge_pbmc.Rmd
+    Untracked:  dsc/benchmark.sh
+    Untracked:  dsc/code/zinbwaveZinger/
+    Untracked:  dsc/config.yaml
+    Untracked:  dsc/data/pbmc.rds
+    Untracked:  dsc/data/pbmc_counts.rds
+    Untracked:  dsc/data/pbmc_counts_sub.rds
+    Untracked:  dsc/modules/process_data.R
+    Untracked:  dsc/modules/process_data.dsc
+    Untracked:  dsc/modules/sim_data.R
+    Untracked:  dsc/modules/sim_data.dsc
+    Untracked:  dsc/monitor.py
+    Untracked:  dsc/monitor_output/
+    Untracked:  dsc/power_berge.dsc
+    Untracked:  dsc/type1_berge.dsc
+    Untracked:  dsc/type1_simple.dsc
+    Untracked:  output/
 
 Unstaged changes:
+    Modified:   analysis/index.Rmd
     Modified:   dsc/benchmark.dsc
-    Deleted:    dsc/benchmark.query.R
-    Modified:   dsc/benchmark/benchmark.conf.mpk
-    Modified:   dsc/benchmark/benchmark.db
-    Modified:   dsc/benchmark/benchmark.map.mpk
+    Modified:   dsc/data/README.md
+    Modified:   dsc/modules/get_data.R
     Modified:   dsc/modules/get_data.dsc
-    Deleted:    dsc/modules/glm.dsc
-    Modified:   dsc/modules/methodsMeanExpression.R
-    Modified:   dsc/modules/methodsMeanExpression.dsc
-    Deleted:    dsc/modules/run_DESeq2.R
-    Deleted:    dsc/modules/run_DESeq2.dsc
-    Deleted:    dsc/modules/t_test.dsc
-    Deleted:    dsc/modules/wilcox_test.dsc
 
 </code></pre>
-Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</details>
 </li>
 </ul>
-<details> <summary> <small><strong>Expand here to see past versions:</strong></small> </summary>
+<details>
+<summary> <small><strong>Expand here to see past versions:</strong></small> </summary>
 <ul>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
@@ -356,6 +348,91 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/c1732527aa307cd9e00a58f32a9d552bbc1a5404/analysis/test.Rmd" target="_blank">c173252</a>
+</td>
+<td style="text-align:left;">
+Joyce Hsiao
+</td>
+<td style="text-align:left;">
+2019-01-09
+</td>
+<td style="text-align:left;">
+updates
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/4597da6c2faed8492d4fd29c398d74f41959a97f/analysis/test.Rmd" target="_blank">4597da6</a>
+</td>
+<td style="text-align:left;">
+Joyce Hsiao
+</td>
+<td style="text-align:left;">
+2018-11-28
+</td>
+<td style="text-align:left;">
+updates
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/74e3287aaf76aa2b6a99261b797bc879a6147e44/analysis/test.Rmd" target="_blank">74e3287</a>
+</td>
+<td style="text-align:left;">
+Joyce Hsiao
+</td>
+<td style="text-align:left;">
+2018-11-21
+</td>
+<td style="text-align:left;">
+add dsc code
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/59ff4e09c22a142d0fc72fd37076130d2c9a8668/analysis/test.Rmd" target="_blank">59ff4e0</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-20
+</td>
+<td style="text-align:left;">
+updates
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/75c78c975a120b7b5e58679012363187dbdf5130/docs/test.html" target="_blank">75c78c9</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-16
+</td>
+<td style="text-align:left;">
+Build site.
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -461,56 +538,73 @@ first commit
 </tbody>
 </table>
 </ul>
-<p></details></p>
+</details>
 <hr />
 <div id="overview" class="section level2">
 <h2>Overview</h2>
 <p>We applied two-sample tests for mean difference to simulated datasets.</p>
 <p>The methods applied include:</p>
 <ul>
+<li>edgeR</li>
 <li>DESeq2</li>
 <li>glm poisson</li>
 <li>glm quasipoisson</li>
+<li>MAST</li>
 <li>t-test</li>
 <li>wilcoson tet</li>
+<li>limma + voom</li>
 </ul>
-<p>The simulated data were made from experimental datasets as described below.</p>
+<p>The simulation settings are:</p>
 <ol style="list-style-type: decimal">
 <li><p>Draw (sample without replacement) p genes and N samples from the experimental dataset.</p></li>
 <li><p>For the <code>Correlated case</code>, assign samples to Group 1 or Group 2.</p></li>
 <li><p>For the <code>Uncorrelated case</code>, permute sample labels for each gene, then in the permuted sample, assign samples to Group 1 or Group 2.</p></li>
+<li><p>Sample size (n1 vs n2): 45 vs 45, 300 vs 300</p></li>
 </ol>
-<p>In addition, the parameter setting is:</p>
+<p>This document contains results concering null datasets made from two different experimental datasets</p>
+<ol style="list-style-type: decimal">
+<li><p>PBMC two cell types: 787 samples and ~ 946 genes. We filtered the original data to include samples that are detected in &gt; 200 genes and genes that are detected in &gt; 20% of cells. About 55% zeros in the count matrix.</p></li>
+<li><p>PBMC seven cell types: 2,683 samples and ~ 11,000 genes. 93% zeros in the count matrix.</p></li>
+</ol>
+<p>The original PBMC data:</p>
 <ul>
-<li><p>Sample size (n1 vs n2): 50 vs 50, 300 vs 300</p></li>
-<li><p>Number of genes (p): 946</p></li>
-</ul>
-<p>Regarding the experimental data:</p>
-<ul>
-<li><p>single cell RNA-seq data from 10x genomics technology</p></li>
-<li><p>The dataset used in the simulation include CD14+ Monocytes and CD8 T cells, a total of 787 samples and 946 genes.</p></li>
-<li><p>The original complete dataset include 2,700 single cells and 32,738 genes from 8 immune cell types: B cells, CD4 T cells, CD8 T cells, CD14+ Monocytes, Dendritic cells, FCGR3A+ Monocytes, Megakaryocytes, NK cells.</p></li>
-<li><p>We filtered the original data to include samples that are detected in &gt; 200 genes and genes that are detected in &gt; 20% of cells.</p></li>
+<li><p>single cell RNA-seq data of peripheral blood mononuclear cells collected from 10x genomics technology</p></li>
+<li><p>Include 2,700 single cells and 32,738 genes from 8 immune cell types: B cells, CD4 T cells, CD8 T cells, CD14+ Monocytes, Dendritic cells, FCGR3A+ Monocytes, Megakaryocytes, NK cells.</p></li>
+<li><p>Downloaded from Seurat tutorial (<a href="http://satijalab.org/seurat/pbmc3k_tutorial.html" class="uri">http://satijalab.org/seurat/pbmc3k_tutorial.html</a>)</p></li>
 </ul>
 <hr />
 </div>
-<div id="results" class="section level2">
-<h2>Results</h2>
-<pre class="r"><code>library(dscrutils)
-#setwd(&quot;~/Dropbox/GitHub/dsc-log-fold-change/dsc&quot;)
-dir_dsc &lt;- &quot;/Users/joycehsiao/Dropbox/GitHub/dsc-log-fold-change/dsc/benchmark&quot;
-out &lt;- dscquery(dir_dsc, 
-                c(&quot;get_data&quot;, &quot;get_data.n1&quot;, &quot;get_data.n2&quot;, &quot;method&quot;, &quot;method.p&quot;))</code></pre>
-<pre><code>Loading dsc-query output from CSV file.
-Reading DSC outputs:
- - method.p: vectors not extracted (set max.extract.vector = 946 to extract)</code></pre>
-<pre class="r"><code>plotRest &lt;- function(dir_dsc, dscoutput, 
+<div id="implementationcode" class="section level2">
+<h2>Implementation/Code</h2>
+<ul>
+<li><p><code>dsc/type1_simple.dsc</code>: PBMC two cell types: 787 samples and ~ 946 genes. We filtered the original data to include samples that are detected in &gt; 200 genes and genes that are detected in &gt; 20% of cells. About 55% zeros in the count matrix.</p></li>
+<li><p><code>dsc/type1_berge.dsc</code>: PBMC seven cell types: 2,683 samples and ~ 11,000 genes. 93% zeros in the count matrix.</p></li>
+<li><p>For edgeR and DESeq2, we used the settings in <a href="https://doi.org/10.1186/s13059-018-1406-4">Van den berge et al., 2018</a></p></li>
+</ul>
+<hr />
+</div>
+<div id="analysis" class="section level2">
+<h2>Analysis</h2>
+<p>Running job on midway2</p>
+<pre class="bash"><code>cd dsc
+
+dsc ./type1_simple.dsc --host ./config.yaml #-c 20
+dsc ./type1_berge.dsc --host ./config.yaml </code></pre>
+<hr />
+</div>
+<div id="codes-and-packages" class="section level2">
+<h2>Codes and Packages</h2>
+<pre class="r"><code>get_res &lt;- function(dir_dsc, dscoutput, 
                      sim_case=c(&quot;sample_correlated&quot;, &quot;sample_uncorrelated&quot;), 
-                     sample_size=c(50,300),
-                     title_label, plot=T, return_res=T) {
+                     sample_size=c(50,300), seed=1) {
+  
+  dscoutput$method &lt;- as.factor(dscoutput$method)
   n_methods &lt;- nlevels(dscoutput$method)
-#dscoutput &lt;- out; sim_case=&quot;random_sample&quot;; sample_size=50  
-  out.sub &lt;- dscoutput[dscoutput$get_data==sim_case &amp; dscoutput$get_data.n1==sample_size,]
+  if (!is.null(sim_case)) {
+  out.sub &lt;- dscoutput[dscoutput$get_data==sim_case &amp; dscoutput$get_data.n1==sample_size &amp; dscoutput$get_data.seed == seed,]
+  } else {
+  out.sub &lt;- dscoutput[dscoutput$get_data.n1==sample_size &amp; dscoutput$get_data.seed == seed,]
+  }
   
   res &lt;- vector(&quot;list&quot;,n_methods)
   for (i in 1:nrow(out.sub)) {
@@ -518,90 +612,272 @@ Reading DSC outputs:
     fl &lt;- readRDS(file.path(dir_dsc,
                          paste0(as.character(out.sub$method.p[i]), &quot;.rds&quot;)))
     res[[i]] &lt;- data.frame(method = as.character(out.sub$method)[i],
-               n1_n2 = paste0(out.sub$get_data.n1[i],&quot;.&quot;,
+                           seed = out.sub$get_data.seed[i],
+                           n1_n2 = paste0(out.sub$get_data.n1[i],&quot;.&quot;,
                               out.sub$get_data.n2[i]),
-               pval = fl$p,
-               stringsAsFactors = F)
+                           pval = fl$p,
+                           stringsAsFactors = F)
   }
   names(res) &lt;- as.character(out.sub$method)
+  return(res)
+}
+
+
+
+
+# plotTypeI(dir_dsc=dir_dsc, dscoutput=out_300, sim_case=&quot;sample_correlated&quot;, 
+#           sample_size=300, alpha=.05, title_label=NULL, seeds_seq=c(2:101))
+
+plotTypeI &lt;- function(dir_dsc, dscoutput, sim_case=NULL, sample_size, alpha=.05,
+                      title_label=NULL, seeds_seq=c(1:10)) {
+
+  library(dplyr)
+  library(ggplot2)
   
-  if (plot) {
-    cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Accent&quot;)
-    par(mfrow=c(3,2))
-    for (i in 1:length(res)) {
-      hist(res[[i]]$pval, main=&quot;&quot;,
-           xlab = &quot;p-values&quot;, ylab = &quot;Frequency&quot;,
-           nclass = 20, col=cols[i])
-      title(main=names(res)[i])
+  res_all &lt;- lapply(seeds_seq, function(i) {
+#    print(i)
+    res &lt;- get_res(dir_dsc, dscoutput=dscoutput, sim_case=sim_case, sample_size=sample_size, seed=i)
+    res &lt;- do.call(rbind, res)
+    res_summary &lt;- res %&gt;% group_by(method) %&gt;% summarise(type1=mean(pval&lt;alpha, na.rm=T), nvalid=sum(!is.na(pval)))
+    res_summary$seed &lt;- i
+    res_summary &lt;- data.frame(res_summary)
+    return(res_summary)
+  })
+  res_all &lt;- do.call(rbind, res_all)
+  
+#  res_summary &lt;- do.call(rbind, res)
+  # res_summary &lt;- res_summary %&gt;% group_by(method) %&gt;% summarise(type1=mean(pval&lt;alpha))
+  n_methods &lt;- length(unique(res_all$method))
+  res_all$method &lt;- as.factor(res_all$method)
+  cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+  print(
+    ggplot(res_all, aes(x=method, y=type1, col=method)) +
+      geom_hline(yintercept=.05, 
+              color = &quot;red&quot;, size=.5) +
+      geom_boxplot(width=.5) +
+    scale_color_manual(values=cols) 
+    )
+}
+
+
+plotPval &lt;- function(dir_dsc, dscoutput, sim_case=NULL, sample_size, 
+                     xlims=c(0,1), seed=1, bins=30) {
+    library(dplyr)
+    library(ggplot2)
+
+    res &lt;- get_res(dir_dsc, dscoutput=dscoutput, sim_case=sim_case, sample_size=sample_size, seed=seed)
+
+    res_summary &lt;- do.call(rbind, res)
+    n_methods &lt;- length(unique(res_summary$method))
+
+    cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+    res_summary$method &lt;- as.factor(res_summary$method)
+    print(
+    ggplot(res_summary, aes(x=pval, fill=method)) +
+            facet_wrap(~method) +
+            geom_histogram(bins=bins) +
+            xlim(xlims[1],xlims[2]) +
+            scale_fill_manual(values=cols)  )
     }
-    title(title_label, outer=T, line=-1)
-    
+
+
+plotQQ &lt;- function(dir_dsc, dscoutput, sim_case, sample_size=NULL, seed=1,
+                   title_label=NULL, xlims=c(0,1), pch.type=&quot;S&quot;, add.abline=T) {
+    library(dplyr)
+    library(ggplot2)
+
+    res &lt;- get_res(dir_dsc, dscoutput=dscoutput, sim_case=sim_case, sample_size=sample_size, seed=seed)
+
+    res_summary &lt;- do.call(rbind, res)
+    n_methods &lt;- length(unique(res_summary$method))
+
+    cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+
     qq &lt;- lapply(1:length(res), function(i) {
       qqplot(x=runif(sample_size*2,0,1), y=res[[i]]$pval, plot.it=F)
     })
-    plot(qq[[1]]$x, qq[[1]]$y, col = cols[1], cex=.7, pch = 16,
+    plot(qq[[1]]$x, qq[[1]]$y, col = cols[1], cex=.7, type=pch.type,
          xlab = &quot;Uniform(0,1)&quot;, ylab = &quot;Empirical distribution&quot;,
-         main = &quot;QQ-plot&quot;)
+         main = &quot;QQ-plot&quot;, xlim = xlims, ylim=xlims)
     for (i in 2:n_methods) {
-      points(qq[[i]]$x, qq[[i]]$y, col = cols[i], cex=.7, pch = 16)
+      points(qq[[i]]$x, qq[[i]]$y, col = cols[i], cex=.7, type=pch.type)
     }
+    if (add.abline) {
     abline(0,1, col = &quot;black&quot;)
+    }
     title(title_label, outer=TRUE, line=-1)
-  }
-  
-  if (return_res) {
-  return(res)
-  }
 }</code></pre>
-<pre class="r"><code>out.corr.50 &lt;- plotRest(dir_dsc=dir_dsc, dscoutput=out, 
-                         sim_case=&quot;sample_correlated&quot;, 
-                         sample_size=50,
-                         title_label=&quot;Correlated case: 50 vs 50&quot;, plot=T, return_res=T)</code></pre>
-<p><img src="figure/test.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>out.corr.300 &lt;- plotRest(dir_dsc=dir_dsc, dscoutput=out, 
-                         sim_case=&quot;sample_correlated&quot;, 
-                         sample_size=300,
-                         title_label=&quot;Correlated case: 300 vs 300&quot;, plot=T, return_res=T)</code></pre>
-<p><img src="figure/test.Rmd/unnamed-chunk-2-2.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>out.uncorr.50 &lt;- plotRest(dir_dsc=dir_dsc, dscoutput=out, 
-                         sim_case=&quot;sample_uncorrelated&quot;, 
-                         sample_size=50,
-                         title_label=&quot;Uncorrelated case: 50 vs 50&quot;, plot=T, return_res=T)</code></pre>
-<p><img src="figure/test.Rmd/unnamed-chunk-2-3.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>out.uncorr.300 &lt;- plotRest(dir_dsc=dir_dsc, dscoutput=out, 
-                         sim_case=&quot;sample_uncorrelated&quot;, 
-                         sample_size=300,
-                         title_label=&quot;Uncorrelated case: 300 vs 300&quot;, plot=T, return_res=T)</code></pre>
-<p><img src="figure/test.Rmd/unnamed-chunk-2-4.png" width="672" style="display: block; margin: auto;" /></p>
+<hr />
+</div>
+<div id="results-on-data-1-simple-case" class="section level2">
+<h2>Results on Data 1: simple case</h2>
+<p>Simulating data from two cell types. Max 20% zeros per gene.</p>
+<pre class="r"><code>library(dscrutils)
+#setwd(&quot;~/Dropbox/GitHub/dsc-log-fold-change/dsc&quot;)
+dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/type1_simple&quot;
+out_simple_45 &lt;- dscquery(dir_dsc, 
+                  targets=c(&quot;get_data&quot;, &quot;get_data.seed&quot;,
+                    &quot;get_data.n1&quot;, &quot;get_data.n2&quot;, &quot;method&quot;, &quot;method.p&quot;),
+                  conditions=&quot;get_data.n1 = 45&quot;)
+
+out_simple_300 &lt;- dscquery(dir_dsc, 
+                  targets=c(&quot;get_data&quot;, &quot;get_data.seed&quot;,
+                    &quot;get_data.n1&quot;, &quot;get_data.n2&quot;, &quot;method&quot;, &quot;method.p&quot;),
+                  conditions=&quot;get_data.n1 = 300&quot;)
+
+saveRDS(out_simple_45, file = &quot;../output/test.Rmd/out_simple_45.rds&quot;)
+saveRDS(out_simple_300, file = &quot;../output/test.Rmd/out_simple_300.rds&quot;)</code></pre>
+<pre class="r"><code>library(dscrutils)
+dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/type1_simple&quot;
+
+out_simple_45 &lt;- readRDS(file = &quot;output/test.Rmd/out_simple_45.rds&quot;)
+out_simple_300 &lt;- readRDS(file = &quot;output/test.Rmd/out_simple_300.rds&quot;)
+
+plotTypeI(dir_dsc=dir_dsc, dscoutput=out_simple_45, sim_case=&quot;sample_correlated&quot;, 
+          sample_size=45, alpha=.05, title_label=NULL, seeds_seq=c(2:101))</code></pre>
+<pre><code>
+Attaching package: &#39;dplyr&#39;</code></pre>
+<pre><code>The following objects are masked from &#39;package:stats&#39;:
+
+    filter, lag</code></pre>
+<pre><code>The following objects are masked from &#39;package:base&#39;:
+
+    intersect, setdiff, setequal, union</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotPval(dir_dsc=dir_dsc, dscoutput=out_simple_45, sim_case=&quot;sample_correlated&quot;,
+         sample_size=45, seed=2, xlims=c(0,1))</code></pre>
+<pre><code>Warning: Removed 26 rows containing non-finite values (stat_bin).</code></pre>
+<pre><code>Warning: Removed 16 rows containing missing values (geom_bar).</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotQQ(dir_dsc=dir_dsc, dscoutput=out_simple_45, sim_case=&quot;sample_correlated&quot;,
+       sample_size=45, seed=2)</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-4-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotQQ(dir_dsc=dir_dsc, dscoutput=out_simple_45, sim_case=&quot;sample_correlated&quot;,
+       sample_size=45, seed=2, xlims=c(0,.1), add.abline = F)</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-4-4.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotTypeI(dir_dsc=dir_dsc, dscoutput=out_simple_300, sim_case=&quot;sample_correlated&quot;, 
+          sample_size=300, alpha=.05, title_label=NULL, seeds_seq=c(2:101))</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-4-5.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotPval(dir_dsc=dir_dsc, dscoutput=out_simple_300, sim_case=&quot;sample_correlated&quot;,
+         sample_size=300, seed=2, xlims=c(0,1))</code></pre>
+<pre><code>Warning: Removed 44 rows containing non-finite values (stat_bin).
+
+Warning: Removed 16 rows containing missing values (geom_bar).</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-4-6.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotQQ(dir_dsc=dir_dsc, dscoutput=out_simple_300, sim_case=&quot;sample_correlated&quot;,
+       sample_size=300, seed=2)</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-4-7.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotQQ(dir_dsc=dir_dsc, dscoutput=out_simple_300, sim_case=&quot;sample_correlated&quot;,
+       sample_size=300, seed=2, xlims=c(0,.1), add.abline = F)</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-4-8.png" width="672" style="display: block; margin: auto;" /></p>
+<p>DESeq2 flags NA p-values for about 20 out of 946 genes on average across the 100 simulated datasets.</p>
+<pre class="r"><code>dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/type1_simple&quot;
+sim_case &lt;- &quot;sample_correlated&quot;
+sample_size &lt;- 45
+dscoutput &lt;- out_simple_45
+res_simple_45 &lt;- lapply(2:101, function(i) {
+#    print(i)
+  res &lt;- get_res(dir_dsc, dscoutput=dscoutput, sim_case=sim_case, sample_size=sample_size, seed=i)
+  res &lt;- do.call(rbind, res)
+  res_summary &lt;- res %&gt;% group_by(method) %&gt;% summarise(type1=mean(pval&lt;alpha, na.rm=T), nvalid=sum(!is.na(pval)))
+  res_summary$seed &lt;- i
+  res_summary &lt;- data.frame(res_summary)
+  return(res_summary)
+})
+res_simple_45 &lt;- do.call(rbind, res_simple_45)
+  
+res_simple_45 %&gt;% group_by(method) %&gt;% summarise(nvalid_mean=mean(nvalid))</code></pre>
+<p>All methods do worse when N=300 than when N=45. This is because p-values depend on sample size and get smaller as sample size increases.</p>
+<hr />
+</div>
+<div id="results-on-data-2" class="section level2">
+<h2>Results on Data 2:</h2>
+<p>PBMC seven cell types: 2,683 samples and ~ 11,000 genes. 93% zeros in the count matrix.</p>
+<pre class="r"><code>dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/type1_berge&quot;
+# out_berge &lt;- dscquery(dir_dsc,
+#                 targets=c(&quot;get_data&quot;, &quot;get_data.seed&quot;, &quot;get_data.n1&quot;, &quot;method&quot;, &quot;method.p&quot;))
+
+out_berge_45 &lt;- dscquery(dir_dsc, 
+                  targets=c(&quot;get_data&quot;, &quot;get_data.seed&quot;,
+                    &quot;get_data.n1&quot;, &quot;get_data.n2&quot;, &quot;method&quot;, &quot;method.p&quot;),
+                  conditions=&quot;get_data.n1 = 45&quot;)
+
+saveRDS(out_berge_45, file = &quot;../output/test.Rmd/out_berge_45.rds&quot;)</code></pre>
+<pre class="r"><code>dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/type1_berge&quot;
+out_berge_45 &lt;- readRDS(file = &quot;output/test.Rmd/out_berge_45.rds&quot;)
+
+plotTypeI(dir_dsc=dir_dsc, dscoutput=out_berge_45, #sim_case=&quot;sample_correlated&quot;, 
+          sample_size=45, alpha=.05, title_label=NULL, seeds_seq=c(2:101))</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-6-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotPval(dir_dsc=dir_dsc, dscoutput=out_berge_45, sim_case=NULL,
+         sample_size=45, seed=2, xlims=c(0,1), bins=20)</code></pre>
+<pre><code>Warning: Removed 75 rows containing non-finite values (stat_bin).</code></pre>
+<pre><code>Warning: Removed 16 rows containing missing values (geom_bar).</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-6-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotQQ(dir_dsc=dir_dsc, dscoutput=out_berge_45, sim_case=NULL,
+       sample_size=45, seed=2)</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-6-3.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>plotQQ(dir_dsc=dir_dsc, dscoutput=out_berge_45, sim_case=NULL,
+       sample_size=45, seed=2, xlims=c(0,.1), add.abline = F)</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-6-4.png" width="672" style="display: block; margin: auto;" /></p>
+<p>Why many bumps in the pvalue distribution in the ggplot histograms? Below shows that the same pvalue distribution plotted using baseplot is less bumpy.</p>
+<pre class="r"><code>dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/type1_berge&quot;
+
+out_berge_45 &lt;- dscquery(dir_dsc, 
+                  targets=c(&quot;get_data&quot;, &quot;get_data.seed&quot;,
+                    &quot;get_data.n1&quot;, &quot;get_data.n2&quot;, &quot;method&quot;, &quot;method.p&quot;),
+                  conditions=&quot;get_data.n1 = 45&quot;)</code></pre>
+<pre><code>Loading dsc-query output from CSV file.
+Reading DSC outputs:
+ - method.p: not extracted (filenames provided)</code></pre>
+<pre class="r"><code>fl &lt;- out_berge_45$get_data.output.file[out_berge_45$get_data.seed==2 &amp; out_berge_45$method==&quot;wilcoxon&quot;]
+fl_df &lt;- readRDS(paste0(file.path(dir_dsc,fl),&quot;.rds&quot;))
+                 
+fl &lt;- out_berge_45$method.output.file[out_berge_45$get_data.seed==2 &amp; out_berge_45$method==&quot;edger&quot;]
+fl_method &lt;- readRDS(paste0(file.path(dir_dsc,fl),&quot;.rds&quot;))
+         
+hist(fl_method$p, nclass=20)</code></pre>
+<p><img src="figure/test.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="session-information" class="section level2">
 <h2>Session information</h2>
 <pre class="r"><code>sessionInfo()</code></pre>
-<pre><code>R version 3.4.1 (2017-06-30)
-Platform: x86_64-apple-darwin15.6.0 (64-bit)
-Running under: macOS High Sierra 10.13
+<pre><code>R version 3.5.1 (2018-07-02)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Scientific Linux 7.4 (Nitrogen)
 
 Matrix products: default
-BLAS: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRblas.0.dylib
-LAPACK: /Library/Frameworks/R.framework/Versions/3.4/Resources/lib/libRlapack.dylib
+BLAS/LAPACK: /software/openblas-0.2.19-el7-x86_64/lib/libopenblas_haswellp-r0.2.19.so
 
 locale:
-[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
 
 attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
-[1] dscrutils_0.2.7.11
+[1] bindrcpp_0.2.2    ggplot2_3.1.0     dplyr_0.7.8       dscrutils_0.3.1.1
 
 loaded via a namespace (and not attached):
- [1] workflowr_1.1.1    Rcpp_1.0.0         digest_0.6.18     
- [4] rprojroot_1.3-2    R.methodsS3_1.7.1  backports_1.1.2   
- [7] magrittr_1.5       git2r_0.23.0       evaluate_0.12     
-[10] stringi_1.2.4      whisker_0.3-2      R.oo_1.22.0       
-[13] R.utils_2.7.0      rmarkdown_1.10     RColorBrewer_1.1-2
-[16] tools_3.4.1        stringr_1.3.1      yaml_2.2.0        
-[19] compiler_3.4.1     htmltools_0.3.6    knitr_1.20        </code></pre>
+ [1] Rcpp_1.0.0         RColorBrewer_1.1-2 compiler_3.5.1    
+ [4] pillar_1.3.0       git2r_0.23.0       plyr_1.8.4        
+ [7] workflowr_1.1.1    bindr_0.1.1        R.methodsS3_1.7.1 
+[10] R.utils_2.7.0      tools_3.5.1        digest_0.6.18     
+[13] evaluate_0.12      tibble_1.4.2       gtable_0.2.0      
+[16] pkgconfig_2.0.2    rlang_0.3.0.1      yaml_2.2.0        
+[19] parallel_3.5.1     withr_2.1.2        stringr_1.3.1     
+[22] knitr_1.20         rprojroot_1.3-2    grid_3.5.1        
+[25] tidyselect_0.2.5   glue_1.3.0         R6_2.3.0          
+[28] rmarkdown_1.10     purrr_0.2.5        magrittr_1.5      
+[31] whisker_0.3-2      backports_1.1.2    scales_1.0.0      
+[34] htmltools_0.3.6    assertthat_0.2.0   colorspace_1.3-2  
+[37] labeling_0.3       stringi_1.2.4      lazyeval_0.2.1    
+[40] munsell_0.5.0      crayon_1.3.4       R.oo_1.22.0       </code></pre>
 </div>
 
 <!-- Adjust MathJax settings so that all math formulae are shown using
