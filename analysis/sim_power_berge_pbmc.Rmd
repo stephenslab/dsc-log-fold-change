@@ -1,0 +1,118 @@
+---
+title: "Simulate data following Van den Berge et al., 2018"
+author: "Joyce Hsiao"
+date: "2018-12-11"
+output: workflowr::wflow_html
+---
+
+```{r options, echo=FALSE, results="hide",message=FALSE, error=FALSE, include=FALSE, autodep=TRUE, warning=FALSE}
+knitr::opts_chunk$set(fig.align="center", error=FALSE, message=FALSE, warning=FALSE)
+```
+
+## Introduction
+
+
+* Simulation framework is described in :
+
+Koen Van den Berge, Fanny Perraudeau, Charlotte Soneson, Michael I. Love, Davide Risso, Jean-Philippe Vert, Mark D. Robinson, Sandrine Dudiot, and Lieven Clement. Observation weights unlock bulk RNA-seq tools for zero inflation and single-cell application. Genome Biology (2018) 19:24. 
+
+* Include two cell types with a total of 1153 cells. The cell types are assigned based on Berge et al., 2018 analysis.
+
+
+---
+
+
+
+## Analysis
+
+Load functions/packages.
+
+```{r}
+source("/project2/gilad/joycehsiao/dsc-log-fold-change/dsc/code/zinbwaveZinger/zingeRsimulationFunctions/simulationHelpFunctions_v7_diffInZero.R")
+```
+
+Load pre-computed object. See [here](pbmc_berge_null.html) for steps. Note that the cluster assignment here is different from that in the Seurat tutorial.
+
+```{r load-data, eval=F}
+df <- readRDS("../dsc/data/pbmc.rds")
+
+counts <- data.frame(assay(df))
+
+counts_sub <- assay(df)[,which(colData(df)$seurat == 1 | colData(df)$seurat == 2)]
+dim(counts_sub)
+
+cellType <- colData(df)$seurat[which(colData(df)$seurat == 1 | colData(df)$seurat == 2)]
+
+saveRDS(cellType, "../dsc/data/pbmc_counts_sub_celltype.rds")
+saveRDS(counts, file = "../dsc/data/pbmc_counts.rds")
+saveRDS(counts_sub, file = "../dsc/data/pbmc_counts_sub.rds")
+```
+
+Below was adpated from Berge et al., 2018 code (https://github.com/statOmics/zinbwaveZinger), specifically `zinbwaveZinger/zinbwaveSimulations/tenX_sims_fc2/tenX_sims_fc2.Rmd`.
+
+
+Compute parameters.
+
+```{r params, eval=F}
+paramsTenx <- getDatasetMoMPositive(counts = counts_sub)
+saveRDS(paramsTenx, file = "../output/sim_power_berge_pbmc.Rmd/paramsTenx.rds")
+```
+
+Simulate data.
+
+```{r sims, eval=F}
+paramsTenx <- readRDS(file = "../output/sim_power_berge_pbmc.Rmd/paramsTenx.rds")
+tenXData <- readRDS(file = "../dsc/data/pbmc_counts_sub.rds")
+
+nSamples <- ncol(counts_sub)
+grp <- as.factor(rep(1:2, each = nSamples/2)) #two-group comparison
+nTags <- 10000 #nr of features
+set.seed(11)
+DEind <- sample(1:nTags,floor(nTags*.1),replace=FALSE) #10% DE
+fcSim <- (2 + rexp(length(DEind), rate = 1/2)) #fold changes
+libSizes <- sample(colSums(tenXData),nSamples,replace=TRUE) #library sizes
+simData <- NBsimSingleCell(foldDiff = fcSim, ind = DEind,
+                           dataset = tenXData, nTags = nTags,
+                           group = grp,
+                           verbose = TRUE, params = paramsTenx,
+                           lib.size = libSizes, cpm="AveLogCPM", normalizeLambda=TRUE,
+                           min.dispersion=1e-3)
+simData$counts[1:5,1:5]
+saveRDS(simData, file = "../output/sim_power_berge_pbmc.Rmd/simData.rds")
+saveRDS(simData, file = "../dsc/data/pbmc_simdata_berge.rds")
+```
+
+Evalute some properties of the simulate data. 
+
+```{r}
+simData <- readRDS("output/sim_power_berge_pbmc.Rmd/simData.rds")
+
+tenXData <- readRDS("dsc/data/pbmc_counts_sub.rds")
+cellType <- readRDS("dsc/data/pbmc_counts_sub_celltype.rds")
+
+dOrig <- suppressWarnings(edgeR::calcNormFactors(DGEList(tenXData)))
+dOrig <- estimateDisp(dOrig, design=model.matrix(~cellType))
+d <- suppressWarnings(edgeR::calcNormFactors(DGEList(simData$counts)))
+d <- estimateDisp(d, design=model.matrix(~simData$group))
+```
+
+```{r}
+par(mfrow=c(1,2))
+plotBCV(dOrig,ylim=c(0,12), xlim=c(9,16))
+plotBCV(d,ylim=c(0,12), xlim=c(9,16))
+```
+
+Association of library size with zeros
+
+```{r}
+par(mfrow=c(1,2))
+plot(x=log(colSums(tenXData)), y=colMeans(tenXData==0), xlab="Log library size", ylab="Fraction of zeros", xlim=c(5.5,10), ylim=c(0,.9))
+points(x=log(colSums(simData$counts)), y=colMeans(simData$counts==0), col=2)
+
+
+plot(x=colSums(tenXData), y=colMeans(tenXData==0), xlab="library size", ylab="Fraction of zeros", xlim=c(300,3000), ylim=c(.2,1))
+points(x=colSums(simData$counts), y=colMeans(simData$counts==0), col=2)
+```
+
+
+
