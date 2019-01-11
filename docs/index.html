@@ -238,76 +238,64 @@ div.section {
 </div>
 
 
-<p><strong>Last updated:</strong> 2018-11-17</p>
+<p><strong>Last updated:</strong> 2019-01-11</p>
 <strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
 <ul>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>R Markdown file:</strong> up-to-date </summary></p>
+<details>
+<p><summary> <strong style="color:blue;">✔</strong> <strong>R Markdown file:</strong> up-to-date </summary></p>
 <p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
 </details>
 </li>
 <li>
-<p><details> <summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/afbb6872374797a1b19391c8e3166e3cc22a3892" target="_blank">afbb687</a> </summary></p>
+<details>
+<p><summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/b17230c8996acd43eeb6d78bd50cefd6d82f7365" target="_blank">b17230c</a> </summary></p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
 <pre><code>
 Ignored files:
-    Ignored:    .DS_Store
     Ignored:    .Rhistory
-    Ignored:    .Rprofile
     Ignored:    .Rproj.user/
     Ignored:    .sos/
-    Ignored:    analysis/.DS_Store
     Ignored:    analysis/.sos/
-    Ignored:    dsc/.DS_Store
     Ignored:    dsc/.sos/
-    Ignored:    dsc/benchmark/.DS_Store
-    Ignored:    dsc/modules/.DS_Store
+    Ignored:    output/
 
 Untracked files:
-    Untracked:  dsc/benchmark/DESeq2/sample_correlated_1_deseq2_1.rds
-    Untracked:  dsc/benchmark/DESeq2/sample_correlated_1_deseq2_1.stderr
-    Untracked:  dsc/benchmark/DESeq2/sample_correlated_2_deseq2_1.rds
-    Untracked:  dsc/benchmark/DESeq2/sample_correlated_2_deseq2_1.stderr
-    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_1_deseq2_1.rds
-    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_1_deseq2_1.stderr
-    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_2_deseq2_1.rds
-    Untracked:  dsc/benchmark/DESeq2/sample_uncorrelated_2_deseq2_1.stderr
-    Untracked:  dsc/benchmark/glm_pois/sample_correlated_1_glm_pois_1.rds
-    Untracked:  dsc/benchmark/glm_pois/sample_correlated_2_glm_pois_1.rds
-    Untracked:  dsc/benchmark/glm_pois/sample_uncorrelated_1_glm_pois_1.rds
-    Untracked:  dsc/benchmark/glm_pois/sample_uncorrelated_2_glm_pois_1.rds
-    Untracked:  dsc/benchmark/glm_quasipois/sample_correlated_1_glm_quasipois_1.rds
-    Untracked:  dsc/benchmark/glm_quasipois/sample_correlated_2_glm_quasipois_1.rds
-    Untracked:  dsc/benchmark/glm_quasipois/sample_uncorrelated_1_glm_quasipois_1.rds
-    Untracked:  dsc/benchmark/glm_quasipois/sample_uncorrelated_2_glm_quasipois_1.rds
-    Untracked:  dsc/benchmark/sample_correlated/
-    Untracked:  dsc/benchmark/sample_uncorrelated/
-    Untracked:  dsc/benchmark/t_test/sample_correlated_1_t_test_1.rds
-    Untracked:  dsc/benchmark/t_test/sample_correlated_2_t_test_1.rds
-    Untracked:  dsc/benchmark/t_test/sample_uncorrelated_1_t_test_1.rds
-    Untracked:  dsc/benchmark/t_test/sample_uncorrelated_2_t_test_1.rds
-    Untracked:  dsc/benchmark/wilcoxon/
+    Untracked:  analysis/sim_power_berge_pbmc_results.Rmd
+    Untracked:  dsc/benchmark.sh
+    Untracked:  dsc/code/zinbwaveZinger/
+    Untracked:  dsc/config.yaml
+    Untracked:  dsc/data/cis_gene_expression.txt
+    Untracked:  dsc/data/pbmc.rds
+    Untracked:  dsc/data/pbmc_counts.rds
+    Untracked:  dsc/data/pbmc_counts_sub.rds
+    Untracked:  dsc/data/pbmc_counts_sub_celltype.rds
+    Untracked:  dsc/data/pbmc_simdata_berge.rds
+    Untracked:  dsc/data/samples-id-for-paper.txt
+    Untracked:  dsc/modules/get_sim_data.dsc
+    Untracked:  dsc/modules/process_data.R
+    Untracked:  dsc/modules/process_data.dsc
+    Untracked:  dsc/modules/sim_data.R
+    Untracked:  dsc/modules/sim_data.dsc
+    Untracked:  dsc/monitor.py
+    Untracked:  dsc/monitor_output/
+    Untracked:  dsc/power_berge.dsc
+    Untracked:  dsc/type1_berge.dsc
+    Untracked:  dsc/type1_simple.dsc
 
 Unstaged changes:
     Modified:   dsc/benchmark.dsc
-    Deleted:    dsc/benchmark.query.R
-    Modified:   dsc/benchmark/benchmark.conf.mpk
-    Modified:   dsc/benchmark/benchmark.db
-    Modified:   dsc/benchmark/benchmark.map.mpk
+    Modified:   dsc/data/README.md
+    Modified:   dsc/modules/get_data.R
     Modified:   dsc/modules/get_data.dsc
-    Deleted:    dsc/modules/glm.dsc
-    Modified:   dsc/modules/methodsMeanExpression.R
-    Modified:   dsc/modules/methodsMeanExpression.dsc
-    Deleted:    dsc/modules/run_DESeq2.R
-    Deleted:    dsc/modules/run_DESeq2.dsc
-    Deleted:    dsc/modules/t_test.dsc
-    Deleted:    dsc/modules/wilcox_test.dsc
 
 </code></pre>
-Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes. </details>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</details>
 </li>
 </ul>
-<details> <summary> <small><strong>Expand here to see past versions:</strong></small> </summary>
+<details>
+<summary> <small><strong>Expand here to see past versions:</strong></small> </summary>
 <ul>
 <table style="border-collapse:separate; border-spacing:5px;">
 <thead>
@@ -330,6 +318,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td style="text-align:left;">
+Rmd
+</td>
+<td style="text-align:left;">
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/b17230c8996acd43eeb6d78bd50cefd6d82f7365/analysis/index.Rmd" target="_blank">b17230c</a>
+</td>
+<td style="text-align:left;">
+Joyce Hsiao
+</td>
+<td style="text-align:left;">
+2019-01-11
+</td>
+<td style="text-align:left;">
+update TOC
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+html
+</td>
+<td style="text-align:left;">
+<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/75c78c975a120b7b5e58679012363187dbdf5130/docs/index.html" target="_blank">75c78c9</a>
+</td>
+<td style="text-align:left;">
+jhsiao999
+</td>
+<td style="text-align:left;">
+2018-11-16
+</td>
+<td style="text-align:left;">
+Build site.
+</td>
+</tr>
 <tr>
 <td style="text-align:left;">
 Rmd
@@ -435,12 +457,28 @@ Start workflowr project.
 </tbody>
 </table>
 </ul>
-<p></details></p>
+</details>
 <hr />
 <p>Project website for benchmarking methods for single-cell DE methods.</p>
-<p>First, consider</p>
 <ul>
-<li><a href="test.html">Investigate Type I error control</a></li>
+<li>Investigate Type I error control in simulated null datasets
+<ul>
+<li>Using <a href="test.html">single-cell real dataset (10X PBMC data)</a>, and consider two scenarios:
+<ul>
+<li>Case 1: Replicate results in Berge et al., 2018.<br />
+</li>
+<li>Case 2: Assess type I error as a function of sample size. (45 and 300)</li>
+<li>Note that data used in Case 1 was curated as described in Van den Berge et al., 2018, see <a href="pbmc_berge_null.html">here</a> for steps.</li>
+</ul></li>
+</ul></li>
+<li>Power evaluation
+<ul>
+<li>Using <a href="sim_power_berge_pbmc_results.html">Van den Berge et al. 2018 simulated data</a>, generated here using their <a href="sim_power_berge_pbmc.html">code</a></li>
+</ul></li>
+<li>Data curation procedure is described <a href="../dsc/data/README.md">here</a>.
+<ul>
+<li>10x Genomics PBMC dataset.</li>
+</ul></li>
 </ul>
 
 <!-- Adjust MathJax settings so that all math formulae are shown using
