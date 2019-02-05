@@ -1,0 +1,28 @@
+name: dsc-log-fold-change
+channels:
+- conda-forge
+- bioconda
+- defaults
+- jdblischak
+dependencies:
+# DSC
+- conda-forge::dsc=0.3.3
+- conda-forge::r-devtools
+- jdblischak::r-dscrutils
+# Benchmark
+- bioconda::bioconductor-biocparallel
+- bioconda::bioconductor-edger
+- bioconda::bioconductor-deseq2
+- bioconda::bioconductor-limma
+- bioconda::bioconductor-mast
+- bioconda::bioconductor-zinbwave
+- conda-forge::r-dplyr
+- conda-forge::r-ggplot2
+- conda-forge::r-rcolorbrewer
+# workflowr
+- conda-forge::r-knitr
+- conda-forge::r-rmarkdown
+- conda-forge::r-workflowr
+# Utility
+- conda-forge::jupyter
+- jdblischak::sos-notebook
