@@ -7,7 +7,7 @@ install:
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - travis_retry conda env create --quiet --file environment.yaml
+  - travis_retry conda env create --file environment.yaml
 
 before_script:
   - source activate dsc-log-fold-change
