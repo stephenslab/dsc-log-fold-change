@@ -49,7 +49,7 @@ DSC:
     account: "SBATCH --account=pi-gilad"
 
 default:
-  queue: gilad
+  queue: giladlab
   time_per_instance: 2m
   instances_per_job: 1
   n_cpu: 2
