@@ -14,8 +14,8 @@ DSC:
   exec_path: modules
   global:
     dataFile: "data/pbmc_counts.rds"
-  output:
-    /scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark
+#  output:
+#    /scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark
 
 
 # Simulate data ----------------------------------------------------------
