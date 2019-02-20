@@ -2,7 +2,7 @@ data_poisthin_signal: R(counts = readRDS(${dataFile})) + \
        dataSimulate.R + \
        R(out = poisthin(mat=t(counts), nsamp = args$nsamp, ngene = args$ngene, gselect = args$gselect, signal_dist = "bignormal", prop_null = args$prop_null)) + \
        R(groupInd = out$X[,2]; Y1 = t(out$Y[groupInd==1,]); Y2 = t(out$Y[groupInd==0,]))
-  seed: R{2:101}
+  seed: R{2:4}
   nsamp: 90
   ngene: 1000
   prop_null: .9
@@ -18,7 +18,7 @@ data_poisthin_null: R(counts = readRDS(${dataFile})) + \
      dataSimulate.R + \
      R(out = poisthin(mat=t(counts), nsamp = args$nsamp, ngene = args$ngene, gselect = args$gselect, signal_dist = args$signal_dist, prop_null = args$prop_null)) + \
      R(groupInd = out$X[,2]; Y1 = t(out$Y[groupInd==1,]); Y2 = t(out$Y[groupInd==0,]))
-  seed: R{2:101}
+  seed: R{2:4}
   nsamp: 90
   ngene: 1000
   prop_null: 1
