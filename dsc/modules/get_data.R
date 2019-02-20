@@ -1,3 +1,4 @@
+library(poisthin)
 library(Matrix)
 
 sample_data <- function(counts, n, p=NULL) {
