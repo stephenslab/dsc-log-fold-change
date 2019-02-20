@@ -1,23 +1,28 @@
-sample_data <- function(counts, n, p) {
+library(Matrix)
+
+sample_data <- function(counts, n, p=NULL) {
     # each row is a gene
     # each column is a sample
     counts = as.matrix(counts)
     nn = ncol(counts)
-    pp = nrow(counts)
+    ngenes = nrow(counts)
     n = min(nn, n)
-    p = min(pp, p)
-    genes_idx = sample(1:pp, p)
+
+    if (!is.null(p)) {
+      pp = min(ngenes, p)
+      genes_idx = sample(1:ngenes, pp)
+      }
+    if (is.null(p)) {
+      pp = ngenes
+      genes_idx = 1:ngenes
+      }
+
     return(counts[genes_idx, sample(1:nn, n)])
 }
 
-#get_data_random = function(counts, args) {
-#  return(list(x=sample_data(counts, args$n1, args$p),
-#              y=sample_data(counts, args$n2, args$p)))
-#}
-
 get_sample_correlated <- function(counts, args) {
-  if (is.null(args$seed)) {args$seed <- 99}
-  set.seed(args$seed)
+  # if (is.null(args$seed)) {args$seed <- 99}
+  # set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
@@ -30,8 +35,8 @@ get_sample_correlated <- function(counts, args) {
 }
 
 get_sample_uncorrelated <- function(counts, args) {
-  if (is.null(args$seed)) {args$seed <- 99}
-  set.seed(args$seed)
+  # if (is.null(args$seed)) {args$seed <- 99}
+  # set.seed(args$seed)
   df <- sample_data(counts, args$n1+args$n2, args$p)
   group <- c(rep(1, args$n1), rep(2, args$n2))
   x <- df[,group==1]
@@ -40,10 +45,4 @@ get_sample_uncorrelated <- function(counts, args) {
               y=y))
 }
 
-# get_data_celltypes = function(counts, meta, args) {
-#   counts = as.matrix(counts)
-#   group1 = counts[ , which(meta$celltype == args$groups[1])]
-#   group2 = counts[ , which(meta$celltype == args$groups[2])]
-#   return(list(x=sample_data(group1, args$n1, args$p),
-#               y=sample_data(group2, args$n2, args$p)))
-# }
+
