@@ -40,9 +40,16 @@ DSC:
     max_walltime: "10d"
     partition: "SBATCH --partition=mstephens"
     account: "SBATCH --account=pi-mstephens"
+  giladlab:
+    based_on: midway2
+    max_cores: 28
+    max_mem: 128G
+    max_walltime: "10d"
+    partition: "SBATCH --partition=gilad"
+    account: "SBATCH --account=pi-gilad"
 
 default:
-  queue: midway2
+  queue: gilad
   time_per_instance: 2m
   instances_per_job: 1
   n_cpu: 2
