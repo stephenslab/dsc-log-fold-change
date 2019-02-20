@@ -1,5 +1,7 @@
 # dsc-log-fold-change
 
+[![Travis-CI Build Status](https://travis-ci.org/stephenslab/dsc-log-fold-change.svg?branch=master)](https://travis-ci.org/stephenslab/dsc-log-fold-change)
+
 This is (or will be) a Dynamic Statistical Comparison
 to estimating (or testing) the "log-fold-change" in mean between
 two groups from count data.
