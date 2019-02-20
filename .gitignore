@@ -5,4 +5,5 @@ dsc/benchmark/*
 .Rprofile
 .rds
 
+dsc/data/*
 output/*
