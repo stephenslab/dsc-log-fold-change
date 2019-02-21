@@ -10,11 +10,11 @@ jobs:
           name: Installation
           command: |
             conda env create --file environment.yaml
-            source activate dsc-log-fold-change
-            conda list
+            conda list -n dsc-log-fold-change
       - run:
           name: Run DSC
           command: |
+            source activate dsc-log-fold-change
             cd dsc/
             dsc --version
             dsc benchmark.dsc -h
