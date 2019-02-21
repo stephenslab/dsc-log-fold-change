@@ -1,0 +1,26 @@
+version: 2
+jobs:
+  build:
+    working_directory: /dsc-log-fold-change
+    docker:
+      - image: continuumio/miniconda3:latest
+    steps:
+      - checkout
+      - run:
+          name: Installation
+          command: |
+            conda env create --file environment.yaml
+            source activate dsc-log-fold-change
+            conda list
+      - run:
+          name: Run DSC
+          command: |
+            cd dsc/
+            dsc --version
+            dsc benchmark.dsc -h
+            dsc benchmark.dsc --truncate
+      - store_artifacts:
+          path: dsc/benchmark/
+      - store_artifacts:
+          path: dsc/benchmark.html
+
