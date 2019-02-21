@@ -1,13 +1,13 @@
 #!/usr/bin/env dsc
 
 # pipeline variables  --------------------------------------------------
-# $Y1: `ngene` by `nsamp/2` matrix of counts for samples in group 1
-# $Y2: `ngene` by `nsamp/2` matrix of counts for samples in group 0
-# $beta: an `ngene` vector of simulated true values beta (used `poisthin` function)
+# $Y1: 'ngene' by `nsamp/2` matrix of counts for samples in group 1
+# $Y2: 'ngene' by `nsamp/2` matrix of counts for samples in group 0
+# $beta: an 'ngene' vector of simulated true values beta (used 'poisthin' function)
 # $log_fold_change_est: an `ngene` vector of estimated values beta
-# $s_hat: an `ngene` vector of estimated values standard error
-# $pval: an `ngene` vector of p-values
-# $df: an `ngene` vector of degrees of freedom
+# $s_hat: an 'ngene' vector of estimated values standard error
+# $pval: an 'ngene' vector of p-values
+# $df: an 'ngene' vector of degrees of freedom
 # $type_one_error: an 'ngene' vector of degrees of freedom
 # $pval_adj: an 'ngene' vector of adjusted p-values, currently we use 'qvalue' from the 'qvalue'
 # $fdr_est: an 'ngene' vector of estimated vaules for false discover rate (depend on 'fdr_thres' level)
@@ -30,22 +30,24 @@
 
 DSC:
   define:
-    data: data_poisthin_null, data_poisthin_signal
-    method: edger, deseq2, glm_pois, glm_quasipois, limma_voom, mast, t_test, wilcoxon
+    data: data_poisthin_null, data_poisthin_power
+#    method: edger, deseq2, glm_pois, glm_quasipois, limma_voom, mast, t_test, wilcoxon
+    method: t_test, wilcoxon
     score: type_one_error, pval_adj, fdr, auc
+#    score: type_one_error, pval_adj * (fdr, auc)
   run:
-    pipe_typeone: data_poisthin_null * method * type_one_error
-    pipe_power: data_poisthin_signal * method * pval_adj * (fdr, auc)
+    pipe_null: data_poisthin_null * method * type_one_error
+    pipe_power: data_poisthin_power * method * pval_adj * (fdr * auc)
+#    pipe_null: data_poisthin_null * method * score
+#    pipe_power: data_poisthin_power * method * score
   exec_path: modules
-  global:
-    dataFile: "data/pbmc_counts.rds"
 #  output:
 #    /scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark
 
 
 # simulate modules ----------------------------------------------------------
 
-data_poisthin_signal: R(counts = readRDS(dataFile)) + \
+data_poisthin_power: R(counts = readRDS(dataFile)) + \
        dataSimulate.R + \
        R(out = poisthin(mat=t(counts), nsamp=nsamp, ngene=ngene, gselect=gselect, signal_dist=signal_dist, prop_null = prop_null)) + \
        R(groupInd = out$X[,2]; Y1 = t(out$Y[groupInd==1,]); Y2 = t(out$Y[groupInd==0,]))
@@ -61,7 +63,7 @@ data_poisthin_signal: R(counts = readRDS(dataFile)) + \
   $beta: out$beta
 
 
-data_poisthin_null (data_poisthin_signal): R(counts = readRDS(dataFile)) + \
+data_poisthin_null (data_poisthin_power): R(counts = readRDS(dataFile)) + \
      dataSimulate.R + \
      R(out = poisthin(mat=t(counts), nsamp=nsamp, ngene=ngene, gselect=gselect, signal_dist=signal_dist, prop_null = prop_null)) + \
      R(groupInd = out$X[,2]; Y1 = t(out$Y[groupInd==1,]); Y2 = t(out$Y[groupInd==0,]))
