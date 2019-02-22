@@ -9,12 +9,22 @@ jobs:
       - run:
           name: Installation
           command: |
-            conda env create --file environment.yaml
-            conda list -n dsc-log-fold-change
+            conda config --set always_yes yes
+            conda config --set changeps1 no
+            conda config --add channels jdblischak
+            conda config --add channels defaults
+            conda config --add channels bioconda
+            conda config --add channels conda-forge
+            conda update -q conda
+            conda info -a
+            # Install conda packages
+            conda install --file requirements/conda-forge \
+                          --file requirements/bioconda \
+                          --file requirements/jdblischak
+            conda list
       - run:
           name: Run DSC
           command: |
-            source activate dsc-log-fold-change
             cd dsc/
             dsc --version
             dsc benchmark.dsc -h
