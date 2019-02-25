@@ -55,7 +55,7 @@ data_poisthin: R(counts = readRDS(dataFile)) + \
   nsamp: 90
   ngene: 1000
   prop_null: .5, .9, 1
-  shuffle_sample: {T, F}
+  shuffle_sample: T, F
   gselect: "random"
   signal_dist: "bignormal"
   $Y1: Y1
