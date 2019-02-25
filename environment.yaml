@@ -15,10 +15,13 @@ dependencies:
 - bioconda::bioconductor-deseq2
 - bioconda::bioconductor-limma
 - bioconda::bioconductor-mast
+- bioconda::bioconductor-qvalue
 - bioconda::bioconductor-zinbwave
 - conda-forge::r-dplyr
 - conda-forge::r-ggplot2
+- conda-forge::r-proc
 - conda-forge::r-rcolorbrewer
+- jdblischak::r-seqgendiff
 # workflowr
 - conda-forge::r-knitr
 - conda-forge::r-rmarkdown
