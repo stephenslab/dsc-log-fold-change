@@ -9,7 +9,7 @@
 # $pval: an 'ngene' vector of p-values
 # $df: an 'ngene' vector of degrees of freedom
 # $type_one_error: an 'ngene' vector of degrees of freedom
-# $pval_adj: an 'ngene' vector of adjusted p-values, currently we use 'qvalue' from the 'qvalue'
+# $qval: an 'ngene' vector of adjusted p-values, currently we use 'qvalue' from the 'qvalue'
 # $fdr_est: an 'ngene' vector of estimated vaules for false discover rate (depend on 'fdr_thres' level)
 # $auc_est: an 'ngene' vector of estimated values for area under the curve (using pROC package)
 
@@ -21,25 +21,24 @@
 # method:
 #   input: $Y1, $Y2
 #   output:  $log_fold_change_est, $s_hat, $pval, $df
+# pval_rank:
+#   input: $pval
+#   output: $qval
 # score:
-#   input: $pval, $pval_adj, $beta
-#   output: $type_one_error, $pval_adj, $fdr_est, $auc_est
+#   input: $pval, $qval, $beta
+#   output: $type_one_error, $fdr_est, $auc_est
 
 
 # Define DSC modules and pipelines --------------------------------------
 
 DSC:
   define:
-    data: data_poisthin_null, data_poisthin_power
-#    method: edger, deseq2, glm_pois, glm_quasipois, limma_voom, mast, t_test, wilcoxon
-    method: t_test, wilcoxon
-    score: type_one_error, pval_adj, fdr, auc
-#    score: type_one_error, pval_adj * (fdr, auc)
+    data: data_poisthin
+    method: edger, deseq2, glm_pois, glm_quasipois, limma_voom, mast, t_test, wilcoxon
+    pval_rank: qvalue
+    score: type_one_error, fdr, auc
   run:
-    pipe_null: data_poisthin_null * method * type_one_error
-    pipe_power: data_poisthin_power * method * pval_adj * (fdr * auc)
-#    pipe_null: data_poisthin_null * method * score
-#    pipe_power: data_poisthin_power * method * score
+    data * method * pval_rank
   exec_path: modules
 #  output:
 #    /scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark
@@ -47,15 +46,16 @@ DSC:
 
 # simulate modules ----------------------------------------------------------
 
-data_poisthin_power: R(counts = readRDS(dataFile)) + \
+data_poisthin: R(counts = readRDS(dataFile)) + \
        dataSimulate.R + \
-       R(out = poisthin(mat=t(counts), nsamp=nsamp, ngene=ngene, gselect=gselect, signal_dist=signal_dist, prop_null = prop_null)) + \
+       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=nsamp, ngene=ngene, gselect=gselect, shuffle_sample=shuffle_sample, signal_dist=signal_dist, prop_null = prop_null)) + \
        R(groupInd = out$X[,2]; Y1 = t(out$Y[groupInd==1,]); Y2 = t(out$Y[groupInd==0,]))
   dataFile: "data/pbmc_counts.rds"
   seed: R{2:101}
   nsamp: 90
   ngene: 1000
-  prop_null: .9
+  prop_null: .5, .9, 1
+  shuffle_sample: {T, F}
   gselect: "random"
   signal_dist: "bignormal"
   $Y1: Y1
@@ -63,14 +63,7 @@ data_poisthin_power: R(counts = readRDS(dataFile)) + \
   $beta: out$beta
 
 
-data_poisthin_null (data_poisthin_power): R(counts = readRDS(dataFile)) + \
-     dataSimulate.R + \
-     R(out = poisthin(mat=t(counts), nsamp=nsamp, ngene=ngene, gselect=gselect, signal_dist=signal_dist, prop_null = prop_null)) + \
-     R(groupInd = out$X[,2]; Y1 = t(out$Y[groupInd==1,]); Y2 = t(out$Y[groupInd==0,]))
-  prop_null: 1
-  $Y1: Y1
-  $Y2: Y2
-  $beta: out$beta
+
 
 
 # method modules ------------------------------------------------------------------
@@ -169,26 +162,28 @@ zinbwave_edger: methodsMeanExpression.R + \
 
 # Scoring modules --------------------------------------------------------------
 
-type_one_error: R(out <- mean(pval < pval_thres, na.rm = TRUE) )
-  pval_thres: .05
+type_one_error: R(truth_vec <- beta !=0; pval_null <- pval[which(truth_vec ==F)]) +\
+              R(out <- mean(pval_null < pval_thres, na.rm = TRUE) )
+  pval_thres: .01
   pval: $pval
+  beta: $beta
   $type_one_error: out
 
-pval_adj: R(library(qvalue); pval_adj <- qvalue(p=pval)$qvalues)
+qvalue: R(library(qvalue); qval <- qvalue(p=pval)$qvalues)
   pval: $pval
-  $pval_adj: pval_adj
+  $qval: qval
 
 fdr: R(truth_vec <- beta !=0) + \
-    R(fdr_est <- sum(pval_adj < fdr_thres & !truth_vec, na.rm=TRUE)/sum(pval_adj < fdr_thres, na.rm=TRUE))
+    R(fdr_est <- sum(qval < fdr_thres & !truth_vec, na.rm=TRUE)/sum(qval < fdr_thres, na.rm=TRUE))
   fdr_thres: .05
   beta: $beta
-  pval_adj: $pval_adj
+  qval: $qval
   $fdr_est: fdr_est
 
 auc: R(truth_vec <- beta !=0) + \
-      R(library(pROC); auc_est <- roc(response=truth_vec, predictor=pval_adj)$auc)
+      R(library(pROC); if(sum(truth_vec==F) == length(truth_vec)) {auc_est <- NA} else {auc_est <- roc(response=truth_vec, predictor=qval)$auc})
     beta: $beta
-    pval_adj: $pval_adj
+    qval: $qval
     $auc_est: auc_est
 
 

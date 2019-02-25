@@ -1,3 +1,4 @@
+library(parallel)
 #' Apply Poisson thinning to a matrix of count data.
 #'
 #' Given a matrix of RNA-seq counts, this function will randomly select two groups of
@@ -25,6 +26,8 @@
 #' @param gvec A logical of length \code{ncol(mat)}. A \code{TRUE} in position \eqn{i}
 #'     indicates inclusion into the smaller dataset. Hence, \code{sum(gvec)} should
 #'     equal \code{ngene}.
+#' @param shuffle_sample To shuffle sample per gene or not - suppose samples are correlated
+#'  across genes, shuffling sample labels at each gene would reduce sample correlation.
 #' @param signal_dist What's the distribution of beta - the true effecrs? Options
 #' 	include \code{"big_normal"} and \code{"near_normal"}.
 #' @param signal_params Specify parameters for beta distribution. This is a list of
@@ -34,6 +37,7 @@
 #' @param prop_null The proportion of genes that are null.
 #' @param alpha If \eqn{b} is an effect and \eqn{s} is an empirical standard deviation, then
 #'     we model \eqn{b/s^\alpha} as being exchangeable.
+#' @param ncores Default 2 cores used in parallelized computing. Use mcapply in parallel package.
 #'
 #' @return A list with the following elements:
 #' \itemize{
@@ -48,13 +52,15 @@
 #'
 #' @export
 poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
+                     shuffle_sample = F,
                      gselect = c("max", "random", "rand_max", "custom", "mean_max"),
                      gvec = NULL,
                      skip_gene = 0,
                      signal_dist = c("big_normal", "near_normal"),
                      signal_params = list(betapi=1, betamu=0, betasd=1),
                      prop_null = 1,
-                     alpha = 0) {
+                     alpha = 0,
+                     ncores=2) {
   ## Check Input -------------------------------------------------------------
 #  assertthat::assert_that(is.matrix(mat))
   assertthat::assert_that(nsamp <= nrow(mat))
@@ -102,7 +108,6 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
     gindices <- order_vec_means[(skip_gene + 1):(skip_gene + ngene)]
   }
 
-
   samp_indices <- sample(1:nrow(mat), size = nsamp)
 
   gindices <- sort(gindices)
@@ -111,6 +116,13 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
   submat <- mat[samp_indices, gindices, drop = FALSE]
   group_indicator <- rep(FALSE, length = nsamp)
   group_indicator[sample(1:nsamp, size = floor(nsamp / 2))] <- TRUE
+
+  ## Shuffle sample labels per gene or not
+  if (shuffle_sample) {
+    submat <- do.call(rbind, mclapply(1:nrow(submat), function(g) {
+      submat[g,sample(ncol(submat))]
+    }, mc.cores = ncores))
+  }
 
   ## Draw signal -------------------------------------------------------------
   if (signal_dist=="big_normal") {
