@@ -238,19 +238,65 @@ div.section {
 </div>
 
 
-<p><strong>Last updated:</strong> 2019-01-11</p>
-<strong>workflowr checks:</strong> <small>(Click a bullet for more information)</small>
-<ul>
-<li>
-<details>
-<p><summary> <strong style="color:blue;">✔</strong> <strong>R Markdown file:</strong> up-to-date </summary></p>
-<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
-</details>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
 </li>
 <li>
-<details>
-<p><summary> <strong style="color:blue;">✔</strong> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/b17230c8996acd43eeb6d78bd50cefd6d82f7365" target="_blank">b17230c</a> </summary></p>
+<a data-toggle="tab" href="#report"> Report <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2019-02-26
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>dsc-log-fold-change/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.2.0). The <em>Report</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="report" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree3eaa4a08911687375ffd72e95d4b2a35337256b9targetblank3eaa4a0a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/3eaa4a08911687375ffd72e95d4b2a35337256b9" target="_blank">3eaa4a0</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree3eaa4a08911687375ffd72e95d4b2a35337256b9targetblank3eaa4a0a" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
 <pre><code>
 Ignored files:
     Ignored:    .Rhistory
@@ -258,208 +304,243 @@ Ignored files:
     Ignored:    .sos/
     Ignored:    analysis/.sos/
     Ignored:    dsc/.sos/
+    Ignored:    dsc/benchmark/
     Ignored:    output/
 
 Untracked files:
+    Untracked:  analysis/figure/
     Untracked:  analysis/sim_power_berge_pbmc_results.Rmd
-    Untracked:  dsc/benchmark.sh
-    Untracked:  dsc/code/zinbwaveZinger/
-    Untracked:  dsc/config.yaml
-    Untracked:  dsc/data/cis_gene_expression.txt
-    Untracked:  dsc/data/pbmc.rds
-    Untracked:  dsc/data/pbmc_counts.rds
-    Untracked:  dsc/data/pbmc_counts_sub.rds
-    Untracked:  dsc/data/pbmc_counts_sub_celltype.rds
-    Untracked:  dsc/data/pbmc_simdata_berge.rds
-    Untracked:  dsc/data/samples-id-for-paper.txt
-    Untracked:  dsc/modules/get_sim_data.dsc
-    Untracked:  dsc/modules/process_data.R
-    Untracked:  dsc/modules/process_data.dsc
-    Untracked:  dsc/modules/sim_data.R
-    Untracked:  dsc/modules/sim_data.dsc
-    Untracked:  dsc/monitor.py
-    Untracked:  dsc/monitor_output/
-    Untracked:  dsc/power_berge.dsc
-    Untracked:  dsc/type1_berge.dsc
-    Untracked:  dsc/type1_simple.dsc
+    Untracked:  dsc/dsc_test/
+    Untracked:  dsc/modules/methodLatentFactor.dsc
+    Untracked:  dsc/modules/methodsLatentFactor.R
+    Untracked:  dsc/test.csv
+    Untracked:  dsc/test.dsc
 
 Unstaged changes:
+    Deleted:    docs/.nojekyll
     Modified:   dsc/benchmark.dsc
-    Modified:   dsc/data/README.md
-    Modified:   dsc/modules/get_data.R
-    Modified:   dsc/modules/get_data.dsc
+    Modified:   dsc/modules/dataSimulate.R
+    Modified:   dsc/modules/dataSimulate.dsc
 
 </code></pre>
+<p>
 Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
-</details>
-</li>
-</ul>
-<details>
-<summary> <small><strong>Expand here to see past versions:</strong></small> </summary>
-<ul>
-<table style="border-collapse:separate; border-spacing:5px;">
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+
+<p>
+These are the previous versions of the R Markdown and HTML files. If you’ve configured a remote Git repository (see <code>?wflow_git_remote</code>), click on the hyperlinks in the table below to view them.
+</p>
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
 <thead>
 <tr>
-<th style="text-align:left;">
+<th>
 File
 </th>
-<th style="text-align:left;">
+<th>
 Version
 </th>
-<th style="text-align:left;">
+<th>
 Author
 </th>
-<th style="text-align:left;">
+<th>
 Date
 </th>
-<th style="text-align:left;">
+<th>
 Message
 </th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left;">
+<td>
 Rmd
 </td>
-<td style="text-align:left;">
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/b17230c8996acd43eeb6d78bd50cefd6d82f7365/analysis/index.Rmd" target="_blank">b17230c</a>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/3eaa4a08911687375ffd72e95d4b2a35337256b9/analysis/index.Rmd" target="_blank">3eaa4a0</a>
 </td>
-<td style="text-align:left;">
+<td>
 Joyce Hsiao
 </td>
-<td style="text-align:left;">
+<td>
+2019-02-26
+</td>
+<td>
+update homepage
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/9d0d79c428f4da56fbd099322b4089fb4f843480/docs/index.html" target="_blank">9d0d79c</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
 2019-01-11
 </td>
-<td style="text-align:left;">
+<td>
+Build site.
+</td>
+</tr>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/b17230c8996acd43eeb6d78bd50cefd6d82f7365/analysis/index.Rmd" target="_blank">b17230c</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-01-11
+</td>
+<td>
 update TOC
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td>
 html
 </td>
-<td style="text-align:left;">
-<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/75c78c975a120b7b5e58679012363187dbdf5130/docs/index.html" target="_blank">75c78c9</a>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/75c78c975a120b7b5e58679012363187dbdf5130/docs/index.html" target="_blank">75c78c9</a>
 </td>
-<td style="text-align:left;">
+<td>
 jhsiao999
 </td>
-<td style="text-align:left;">
+<td>
 2018-11-16
 </td>
-<td style="text-align:left;">
+<td>
 Build site.
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td>
 Rmd
 </td>
-<td style="text-align:left;">
+<td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/afbb6872374797a1b19391c8e3166e3cc22a3892/analysis/index.Rmd" target="_blank">afbb687</a>
 </td>
-<td style="text-align:left;">
+<td>
 jhsiao999
 </td>
-<td style="text-align:left;">
+<td>
 2018-11-16
 </td>
-<td style="text-align:left;">
+<td>
 add DESeq2
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td>
 html
 </td>
-<td style="text-align:left;">
-<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/5dd99de23fd6d01c1d01f876078f5bb0ab14eecf/docs/index.html" target="_blank">5dd99de</a>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/5dd99de23fd6d01c1d01f876078f5bb0ab14eecf/docs/index.html" target="_blank">5dd99de</a>
 </td>
-<td style="text-align:left;">
+<td>
 jhsiao999
 </td>
-<td style="text-align:left;">
+<td>
 2018-11-15
 </td>
-<td style="text-align:left;">
+<td>
 Build site.
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td>
 Rmd
 </td>
-<td style="text-align:left;">
+<td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/c3707b472c9afd826a0b7033a7d1e6fcfb8b3a98/analysis/index.Rmd" target="_blank">c3707b4</a>
 </td>
-<td style="text-align:left;">
+<td>
 jhsiao999
 </td>
-<td style="text-align:left;">
+<td>
 2018-11-15
 </td>
-<td style="text-align:left;">
+<td>
 prelim results on two-sample tests
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td>
 html
 </td>
-<td style="text-align:left;">
-<a href="https://cdn.rawgit.com/stephenslab/dsc-log-fold-change/a85bfe74155acf53c5b2b92b49d2d565b3c105f7/docs/index.html" target="_blank">a85bfe7</a>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/a85bfe74155acf53c5b2b92b49d2d565b3c105f7/docs/index.html" target="_blank">a85bfe7</a>
 </td>
-<td style="text-align:left;">
+<td>
 jhsiao999
 </td>
-<td style="text-align:left;">
+<td>
 2018-11-15
 </td>
-<td style="text-align:left;">
+<td>
 add back htmls
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td>
 Rmd
 </td>
-<td style="text-align:left;">
+<td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/0cc76ea4ae9e65bbe410a2fe13e6401ae6b0d9f0/analysis/index.Rmd" target="_blank">0cc76ea</a>
 </td>
-<td style="text-align:left;">
+<td>
 jhsiao999
 </td>
-<td style="text-align:left;">
+<td>
 2018-11-15
 </td>
-<td style="text-align:left;">
+<td>
 first commit
 </td>
 </tr>
 <tr>
-<td style="text-align:left;">
+<td>
 Rmd
 </td>
-<td style="text-align:left;">
+<td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/2dd4a18b0debf97930466a51ae7f99fb511504f5/analysis/index.Rmd" target="_blank">2dd4a18</a>
 </td>
-<td style="text-align:left;">
+<td>
 jhsiao999
 </td>
-<td style="text-align:left;">
+<td>
 2018-11-15
 </td>
-<td style="text-align:left;">
+<td>
 Start workflowr project.
 </td>
 </tr>
 </tbody>
 </table>
-</ul>
-</details>
-<hr />
+</div>
+<hr>
+</div>
+</div>
+</div>
 <p>Project website for benchmarking methods for single-cell DE methods.</p>
+<ul>
+<li><a href="eval_initial.html">Initial results on method evaluation</a></li>
+</ul>
+<hr />
 <ul>
 <li>Investigate Type I error control in simulated null datasets
 <ul>
@@ -481,6 +562,7 @@ Start workflowr project.
 </ul></li>
 </ul>
 
+
 <!-- Adjust MathJax settings so that all math formulae are shown using
 TeX fonts only; see
 http://docs.mathjax.org/en/latest/configuration.html.  This will make
@@ -492,14 +574,6 @@ footer is added to webpages before the MathJax javascript. -->
     "HTML-CSS": { availableFonts: ["TeX"] }
   });
 </script>
-
-<hr>
-<p>
-  This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a>
-  analysis was created with
-  <a href="https://github.com/jdblischak/workflowr">workflowr</a> 1.1.1
-</p>
-<hr>
 
 
 
