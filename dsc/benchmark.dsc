@@ -34,21 +34,24 @@
 DSC:
   define:
     data: data_poisthin
-    method: edger, deseq2, glm_pois, glm_quasipois, limma_voom, mast, t_test, wilcoxon
-    pval_rank: qvalue
+    method_de: edger, deseq2, glm_pois, glm_quasipois, limma_voom, mast, t_test, wilcoxon
+#    method_factor: sva
     score: type_one_error, fdr, auc
+#    count_normalize: log2_cpm
+#    nfactor_estimate: nf_sva
+    pval_rank: qvalue
   run:
-    data * method * pval_rank
+    data * method_de * pval_rank 
   exec_path: modules
 #  output:
 #    /scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark
 
 
-# simulate modules ----------------------------------------------------------
+# data modules ----------------------------------------------------------
 
 data_poisthin: R(counts = readRDS(dataFile)) + \
        dataSimulate.R + \
-       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=nsamp, ngene=ngene, gselect=gselect, shuffle_sample=shuffle_sample, signal_dist=signal_dist, prop_null = prop_null)) + \
+       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=nsamp, ngene=ngene, gselect=gselect, shuffle_sample=shuffle_sample, signal_fun=signal_fun, signal_params=list(betapi=1, betamu=0, betasd=betasd), prop_null = prop_null)) + \
        R(groupInd = out$X[,2]; Y1 = t(out$Y[groupInd==1,]); Y2 = t(out$Y[groupInd==0,]))
   dataFile: "data/pbmc_counts.rds"
   seed: R{2:101}
@@ -57,12 +60,17 @@ data_poisthin: R(counts = readRDS(dataFile)) + \
   prop_null: .5, .9, 1
   shuffle_sample: T, F
   gselect: "random"
-  signal_dist: "bignormal"
+  signal_fun: "bignormal"
+  betasd: 1, 4
   $Y1: Y1
   $Y2: Y2
   $beta: out$beta
 
 
+#log2_cpm: R(counts = Y) + \
+#       dataSimulate.R + \
+#       R()
+#  Y: $Y
 
 
 
