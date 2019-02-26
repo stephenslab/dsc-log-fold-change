@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+<meta name="author" content="Joyce Hsiao" />
+
+<meta name="date" content="2019-02-20" />
+
+<title>Initial method evaluation</title>
+
+<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="site_libs/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
+<script src="site_libs/navigation-1.1/tabsets.js"></script>
+<script src="site_libs/navigation-1.1/codefolding.js"></script>
+<link href="site_libs/highlightjs-9.12.0/textmate.css" rel="stylesheet" />
+<script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
+<link href="site_libs/font-awesome-5.0.13/css/fa-svg-with-js.css" rel="stylesheet" />
+<script src="site_libs/font-awesome-5.0.13/js/fontawesome-all.min.js"></script>
+<script src="site_libs/font-awesome-5.0.13/js/fa-v4-shims.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs) {
+  hljs.configure({languages: []});
+  hljs.initHighlightingOnLoad();
+  if (document.readyState && document.readyState === "complete") {
+    window.setTimeout(function() { hljs.initHighlighting(); }, 0);
+  }
+}
+</script>
+
+
+
+<style type="text/css">
+h1 {
+  font-size: 34px;
+}
+h1.title {
+  font-size: 38px;
+}
+h2 {
+  font-size: 30px;
+}
+h3 {
+  font-size: 24px;
+}
+h4 {
+  font-size: 18px;
+}
+h5 {
+  font-size: 16px;
+}
+h6 {
+  font-size: 12px;
+}
+.table th:not([align]) {
+  text-align: left;
+}
+</style>
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img {
+  max-width:100%;
+  height: auto;
+}
+.tabbed-pane {
+  padding-top: 12px;
+}
+.html-widget {
+  margin-bottom: 20px;
+}
+button.code-folding-btn:focus {
+  outline: none;
+}
+</style>
+
+
+<style type="text/css">
+/* padding for bootstrap navbar */
+body {
+  padding-top: 51px;
+  padding-bottom: 40px;
+}
+/* offset scroll position for anchor links (for fixed navbar)  */
+.section h1 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+
+.section h2 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h3 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h4 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h5 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+.section h6 {
+  padding-top: 56px;
+  margin-top: -56px;
+}
+</style>
+
+<script>
+// manage active state of menu based on current page
+$(document).ready(function () {
+  // active menu anchor
+  href = window.location.pathname
+  href = href.substr(href.lastIndexOf('/') + 1)
+  if (href === "")
+    href = "index.html";
+  var menuAnchor = $('a[href="' + href + '"]');
+
+  // mark it active
+  menuAnchor.parent().addClass('active');
+
+  // if it's got a parent navbar menu mark it active as well
+  menuAnchor.closest('li.dropdown').addClass('active');
+});
+</script>
+
+
+<div class="container-fluid main-container">
+
+<!-- tabsets -->
+<script>
+$(document).ready(function () {
+  window.buildTabsets("TOC");
+});
+</script>
+
+<!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: 4px; }
+</style>
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
+
+
+
+
+
+
+<div class="navbar navbar-default  navbar-fixed-top" role="navigation">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html">scDE</a>
+    </div>
+    <div id="navbar" class="navbar-collapse collapse">
+      <ul class="nav navbar-nav">
+        <li>
+  <a href="index.html">Home</a>
+</li>
+<li>
+  <a href="about.html">About</a>
+</li>
+<li>
+  <a href="license.html">License</a>
+</li>
+      </ul>
+      <ul class="nav navbar-nav navbar-right">
+        <li>
+  <a href="https://github.com/stephenslab/dsc-log-fold-change">
+    <span class="fa fa-github"></span>
+     
+  </a>
+</li>
+      </ul>
+    </div><!--/.nav-collapse -->
+  </div><!--/.container -->
+</div><!--/.navbar -->
+
+<!-- Add a small amount of space between sections. -->
+<style type="text/css">
+div.section {
+  padding-top: 12px;
+}
+</style>
+
+<div class="fluid-row" id="header">
+
+<div class="btn-group pull-right">
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
+
+
+<h1 class="title toc-ignore">Initial method evaluation</h1>
+<h4 class="author"><em>Joyce Hsiao</em></h4>
+<h4 class="date"><em>2019-02-20</em></h4>
+
+</div>
+
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#preprocessing">Preprocessing</a></li>
+<li><a href="#type-i-error-between-methods">Type I error between methods</a></li>
+<li><a href="#p-value-distribution">p-value distribution</a></li>
+<li><a href="#power-mean-auc">Power: Mean AUC</a></li>
+<li><a href="#power-roc">Power: ROC</a></li>
+<li><a href="#fdr-control-at-.01">FDR control at .01</a></li>
+</ul>
+</div>
+
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
+<span class="glyphicon glyphicon-list" aria-hidden="true"></span> workflowr <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
+</button>
+</p>
+<div id="workflowr-report" class="collapse">
+<ul class="nav nav-tabs">
+<li class="active">
+<a data-toggle="tab" href="#summary">Summary</a>
+</li>
+<li>
+<a data-toggle="tab" href="#report"> Report <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> </a>
+</li>
+<li>
+<a data-toggle="tab" href="#versions">Past versions</a>
+</li>
+</ul>
+<div class="tab-content">
+<div id="summary" class="tab-pane fade in active">
+<p>
+<strong>Last updated:</strong> 2019-02-26
+</p>
+<p>
+<strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
+</p>
+<p>
+<strong>Knit directory:</strong> <code>dsc-log-fold-change/</code> <span class="glyphicon glyphicon-question-sign" aria-hidden="true" title="This is the local directory in which the code in this file was executed."> </span>
+</p>
+<p>
+This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis was created with <a
+  href="https://github.com/jdblischak/workflowr">workflowr</a> (version 1.2.0). The <em>Report</em> tab describes the reproducibility checks that were applied when the results were created. The <em>Past versions</em> tab lists the development history.
+</p>
+<hr>
+</div>
+<div id="report" class="tab-pane fade">
+<div id="workflowr-checks" class="panel-group">
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date </a>
+</p>
+</div>
+<div id="strongRMarkdownfilestronguptodate" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great! Since the R Markdown file has been committed to the Git repository, you know the exact version of the code that produced these results.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongEnvironmentstrongempty"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Environment:</strong> empty </a>
+</p>
+</div>
+<div id="strongEnvironmentstrongempty" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! The global environment was empty. Objects defined in the global environment can affect the analysis in your R Markdown file in unknown ways. For reproduciblity it’s best to always run the code in an empty environment.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSeedstrongcodesetseed20181115code"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Seed:</strong> <code>set.seed(20181115)</code> </a>
+</p>
+</div>
+<div id="strongSeedstrongcodesetseed20181115code" class="panel-collapse collapse">
+<div class="panel-body">
+<p>The command <code>set.seed(20181115)</code> was run prior to running the code in the R Markdown file. Setting a seed ensures that any results that rely on randomness, e.g. subsampling or permutations, are reproducible.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongSessioninformationstrongrecorded"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Session information:</strong> recorded </a>
+</p>
+</div>
+<div id="strongSessioninformationstrongrecorded" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Great job! Recording the operating system, R version, and package versions is critical for reproducibility.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongCachestrongnone"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Cache:</strong> none </a>
+</p>
+</div>
+<div id="strongCachestrongnone" class="panel-collapse collapse">
+<div class="panel-body">
+<p>Nice! There were no cached chunks for this analysis, so you can be confident that you successfully produced the results during this run.</p>
+</div>
+</div>
+</div>
+<div class="panel panel-default">
+<div class="panel-heading">
+<p class="panel-title">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree4dfffaf04328e9005e425a0b69514757d0c97126targetblank4dfffafa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/4dfffaf04328e9005e425a0b69514757d0c97126" target="_blank">4dfffaf</a> </a>
+</p>
+</div>
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree4dfffaf04328e9005e425a0b69514757d0c97126targetblank4dfffafa" class="panel-collapse collapse">
+<div class="panel-body">
+<p>
+Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
+</p>
+<pre><code>
+Ignored files:
+    Ignored:    .Rhistory
+    Ignored:    .Rproj.user/
+    Ignored:    .sos/
+    Ignored:    analysis/.sos/
+    Ignored:    dsc/.sos/
+    Ignored:    dsc/benchmark/
+    Ignored:    output/
+
+Untracked files:
+    Untracked:  analysis/sim_power_berge_pbmc_results.Rmd
+    Untracked:  dsc/dsc_test/
+    Untracked:  dsc/modules/methodLatentFactor.dsc
+    Untracked:  dsc/modules/methodsLatentFactor.R
+    Untracked:  dsc/test.csv
+    Untracked:  dsc/test.dsc
+
+Unstaged changes:
+    Modified:   dsc/benchmark.dsc
+    Modified:   dsc/modules/dataSimulate.R
+    Modified:   dsc/modules/dataSimulate.dsc
+
+</code></pre>
+<p>
+Note that any generated files, e.g. HTML, png, CSS, etc., are not included in this status report because it is ok for generated content to have uncommitted changes.
+</p>
+</div>
+</div>
+</div>
+</div>
+<hr>
+</div>
+<div id="versions" class="tab-pane fade">
+<p>
+There are no past versions. Publish this analysis with <code>wflow_publish()</code> to start tracking its development.
+</p>
+<hr>
+</div>
+</div>
+</div>
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<ul>
+<li><p>Experimental data: PBMC of 2,683 samples and ~ 11,000 genes, including 7+ cell types. This data has large number of zeros (93% zeros in the count matrix).</p></li>
+<li>Simulation parameters
+<ul>
+<li>p = 1000 genes</li>
+<li>N = 90 samples total, 45 samples per group</li>
+<li>100 simulated datasets per scenario</li>
+</ul></li>
+<li>Simulation steps:
+<ol style="list-style-type: decimal">
+<li>Draw (sample without replacement) p genes and N samples from the experimental dataset.</li>
+<li>Assign samples to group 1 or 2 across genes</li>
+</ol></li>
+<li><p>Methods included: edgeR, DESeq2, glm poisson, glm quasipoisson, limma + voom, MAST, t-test, wilcoson test</p></li>
+</ul>
+</div>
+<div id="preprocessing" class="section level2">
+<h2>Preprocessing</h2>
+<pre class="r"><code>knitr::opts_chunk$set(warning=F, message=F)</code></pre>
+<p>extract dsc output and get p-values, q-values, true signals, etc.</p>
+<pre class="r"><code>get_pvals &lt;- function(dir_dsc, dsc_files, verbose = F) {
+  dsc_files$method &lt;- as.factor(dsc_files$method)
+  n_methods &lt;- nlevels(dsc_files$method)
+
+  res &lt;- vector(&quot;list&quot;,n_methods)
+  for (i in 1:nrow(dsc_files)) {
+    if (verbose) {print(i)}
+    fl_pval &lt;- readRDS(file.path(dir_dsc,
+                         paste0(as.character(dsc_files$method.output.file[i]), &quot;.rds&quot;)))
+    fl_beta &lt;- readRDS(file.path(dir_dsc,
+                     paste0(as.character(dsc_files$data_poisthin.output.file[i]), &quot;.rds&quot;)))
+    seed &lt;- dsc_files$data_poisthin.seed[i]
+    prop_null &lt;- dsc_files$data_poisthin.prop_null[i]
+    fl_qval &lt;- readRDS(file.path(dir_dsc,
+                        paste0(as.character(dsc_files$qvalue.output.file[i]), &quot;.rds&quot;)))
+    res[[i]] &lt;- data.frame(method = as.character(dsc_files$method)[i],
+                           seed = seed,
+                           pval = fl_pval$pval,
+                           qval = fl_qval$qval,
+                           truth_vec = fl_beta$beta != 0,
+                           prop_null = prop_null,
+                           stringsAsFactors = F)
+  }
+  res_merge &lt;- do.call(rbind, res)
+  return(res_merge)
+}
+  
+
+
+library(dscrutils)
+dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark&quot;
+dsc_res &lt;- dscquery(dir_dsc, 
+                    targets=c(&quot;data_poisthin&quot;, 
+                              &quot;data_poisthin.seed&quot;, 
+                              &quot;data_poisthin.prop_null&quot;,
+                              &quot;method&quot;,
+                              &quot;qvalue&quot;))
+saveRDS(dsc_res, file = &quot;output/eval_initial.Rmd/dsc_res.rds&quot;)
+
+
+pvals_res &lt;- get_pvals(dir_dsc, dsc_res)
+saveRDS(pvals_res, file = &quot;output/eval_initial.Rmd/pvals_res.rds&quot;)</code></pre>
+<p>Some plotting and summary functions</p>
+<pre class="r"><code># type I error related functions ----------
+plot_oneiter_pval &lt;- function(pvals_res_oneiter, cols, seed=1, bins=30) {
+    n_methods &lt;- length(unique(pvals_res_oneiter$method))
+    print(
+    ggplot(pvals_res_oneiter, aes(x=pval, fill=method)) +
+            facet_wrap(~method) +
+            geom_histogram(bins=bins) +
+#            xlim(xlims[1],xlims[2]) +
+            scale_fill_manual(values=cols)  )
+}
+
+plot_oneiter_qq &lt;- function(pvals_res_oneiter, cols, plot_overlay=T,
+                   title_label=NULL, xlims=c(0,1), pch.type=&quot;S&quot;) {
+    methods &lt;- unique(pvals_res_oneiter$method)
+    n_methods &lt;- length(methods)
+    
+    if(plot_overlay) {
+    print(
+    ggplot(pvals_res_oneiter, aes(sample=pval, col=method)) +
+            stat_qq(cex=.7) +
+            scale_color_manual(values=cols)  )
+    } else {
+    print(
+    ggplot(pvals_res_oneiter, aes(sample=pval, col=method)) +
+            facet_wrap(~method) +
+            stat_qq(cex=.7) +
+            scale_color_manual(values=cols)  )
+    }
+}
+
+# power related functions ----------
+
+get_roc_est &lt;- function(pvals_res, fpr_nbin=100) {
+    method_list &lt;- levels(factor(pvals_res$method))
+    seed_list &lt;- unique(pvals_res$seed)
+    
+    out_roc_est &lt;- lapply(1:length(method_list), function(i) {
+      df_sub &lt;- pvals_res %&gt;% filter(method==method_list[i] &amp; prop_null==prop_null)
+      roc_est_seed &lt;- lapply(1:length(seed_list), function(j) {
+        roc_set_seed_one &lt;- with(df_sub[df_sub$seed==seed_list[j],],
+                                 pROC::auc(response=truth_vec, predictor=qval))
+        fpr &lt;- 1-attr(roc_set_seed_one, &quot;roc&quot;)$specificities
+        tpr &lt;- attr(roc_set_seed_one, &quot;roc&quot;)$sensitivities
+        data.frame(fpr=fpr,tpr=tpr,seed=seed_list[j])
+      })
+      roc_est_seed &lt;- do.call(rbind, roc_est_seed)
+      fpr_range &lt;- range(roc_est_seed$fpr)
+      fpr_seq &lt;- seq.int(from=fpr_range[1], to = fpr_range[2], length.out = fpr_nbin+1)
+      tpr_est_mean &lt;- rep(NA, fpr_nbin)
+      for (index in 1:fpr_nbin) {
+        tpr_est_mean[index] &lt;- mean( roc_est_seed$tpr[which(roc_est_seed$fpr &gt;= fpr_seq[index] &amp; roc_est_seed$fpr &lt; fpr_seq[index+1])], na.rm=T) 
+      }
+      fpr_bin_mean &lt;- fpr_seq[-length(fpr_seq)]+(diff(fpr_seq)/2)
+      roc_bin_est &lt;- data.frame(fpr_bin_mean=fpr_bin_mean,tpr_est_mean=tpr_est_mean)
+      roc_bin_est &lt;- roc_bin_est[!is.na(roc_bin_est$tpr_est_mean),]
+      roc_bin_est$method &lt;- method_list[i]
+      return(roc_bin_est)
+    }) 
+    out &lt;- do.call(rbind, out_roc_est)
+    out$method &lt;- factor(out$method)
+    return(out)
+}</code></pre>
+</div>
+<div id="type-i-error-between-methods" class="section level2">
+<h2>Type I error between methods</h2>
+<pre class="r"><code>library(tidyverse)
+
+pvals_res &lt;- readRDS(&quot;output/eval_initial.Rmd/pvals_res.rds&quot;)
+
+plot_type1 &lt;- function(pvals_res, alpha) {
+  n_methods &lt;- length(unique(pvals_res$method))
+  cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+  pvals_res %&gt;% filter(prop_null==1) %&gt;% 
+    group_by(method, seed) %&gt;%
+    summarise(type1=mean(pval&lt;alpha, na.rm=T), nvalid=sum(!is.na(pval))) %&gt;%
+    ggplot(., aes(x=method, y=type1, col=method)) +
+        geom_hline(yintercept=alpha, 
+                color = &quot;red&quot;, size=.5) +
+        geom_boxplot(width=.5) +
+      ylab(&quot;Type I error&quot;) +
+      scale_x_discrete(position = &quot;top&quot;,
+                       labels=c(&quot;deseq2&quot;, &quot;edger&quot;,&quot;glm_p&quot;, &quot;glm_q&quot;,
+                                &quot;limma_v&quot;, &quot;mast&quot;, &quot;t_test&quot;, &quot;wilcox&quot;)) +
+      scale_color_manual(values=cols) + ggtitle(paste0(&quot;Type I error at alpha &lt; &quot;,alpha))
+}
+
+library(cowplot)
+plot_grid(plot_type1(pvals_res, alpha=.01), 
+          plot_type1(pvals_res, alpha=.001))</code></pre>
+<p><img src="figure/eval_initial.Rmd/unnamed-chunk-4-1.png" width="1152" style="display: block; margin: auto;" /></p>
+</div>
+<div id="p-value-distribution" class="section level2">
+<h2>p-value distribution</h2>
+<pre class="r"><code>n_methods &lt;- length(unique(pvals_res$method))
+cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+plot_grid(plot_oneiter_pval(pvals_res[pvals_res$seed == 2 &amp; pvals_res$prop_null == 1, ],
+                  cols=cols) + ylim(0,30),
+          plot_oneiter_qq(pvals_res[pvals_res$seed == 2 &amp; pvals_res$prop_null == 1, ],
+                cols=cols, plot_overlay = T) + xlim(-3,-1) + ylim(0,.25) )</code></pre>
+<p><img src="figure/eval_initial.Rmd/unnamed-chunk-5-1.png" width="768" style="display: block; margin: auto;" /><img src="figure/eval_initial.Rmd/unnamed-chunk-5-2.png" width="768" style="display: block; margin: auto;" /><img src="figure/eval_initial.Rmd/unnamed-chunk-5-3.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="power-mean-auc" class="section level2">
+<h2>Power: Mean AUC</h2>
+<pre class="r"><code>library(pROC)
+
+pvals_res &lt;- readRDS(&quot;output/eval_initial.Rmd/pvals_res.rds&quot;)
+
+plot_roc &lt;- function(roc_est, cols,
+                     title_label=NULL) {
+  n_methods &lt;- length(unique(roc_est$method))
+  print(
+    ggplot(roc_est, aes(x=fpr_bin_mean, 
+                        y=tpr_est_mean, col=method)) +
+      # geom_hline(yintercept=alpha, 
+      #         color = &quot;red&quot;, size=.5) +
+      geom_step() +
+      scale_color_manual(values=cols) 
+    )
+}
+
+
+# AUC ----------
+plot_auc &lt;- function(pvals_res) {
+  n_methods &lt;- length(unique(pvals_res$method))
+  cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+  pvals_res %&gt;% filter(prop_null != 1) %&gt;%
+    group_by(method, prop_null,seed) %&gt;%
+    summarise(auc_est=roc(response=truth_vec, predictor=qval)$auc) %&gt;%
+    group_by(method, prop_null) %&gt;%
+    summarise(auc_mean=mean(auc_est)) %&gt;%
+    ggplot(., aes(x=method, y=auc_mean, col=method, shape=factor(prop_null))) +
+      geom_point(size=4) +
+      ylab(&quot;Mean AUC&quot;) +
+      scale_color_manual(values=cols) +
+      scale_x_discrete(position = &quot;top&quot;,
+                       labels=c(&quot;deseq2&quot;, &quot;edger&quot;, &quot;glm_p&quot;, &quot;glm_q&quot;, 
+                                &quot;limma_v&quot;, &quot;mast&quot;, &quot;t_test&quot;, &quot;wilcox&quot;))
+}
+plot_auc(pvals_res)</code></pre>
+<p><img src="figure/eval_initial.Rmd/unnamed-chunk-6-1.png" width="576" style="display: block; margin: auto;" /></p>
+</div>
+<div id="power-roc" class="section level2">
+<h2>Power: ROC</h2>
+<pre class="r"><code># get estimated ROC
+roc_est &lt;- rbind(cbind(get_roc_est(pvals_res[pvals_res$prop_null==.9,]),prop_null=.9),
+                 cbind(get_roc_est(pvals_res[pvals_res$prop_null==.5,]),prop_null=.5))
+
+roc_est %&gt;% group_by(prop_null) %&gt;%
+  ggplot(., aes(x=fpr_bin_mean, 
+                y=tpr_est_mean, col=method)) +
+    facet_wrap(~prop_null) +
+    geom_line() +
+    scale_color_manual(values=cols) + xlim(0,.2) + ylim(0,.2) +
+    geom_vline(xintercept=.05, col=&quot;gray50&quot;) +
+    xlab(&quot;False positive rate &quot;) +
+    ylab(&quot;Mean true positive rate&quot;)</code></pre>
+<p><img src="figure/eval_initial.Rmd/unnamed-chunk-7-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="fdr-control-at-.01" class="section level2">
+<h2>FDR control at .01</h2>
+<pre class="r"><code>fdr_thres &lt;- .01
+n_methods &lt;- length(unique(pvals_res$method))
+cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+pvals_res %&gt;% group_by(method, seed, prop_null) %&gt;%
+  filter(prop_null != 1) %&gt;%
+  summarise(fdr_control = sum(qval &lt; fdr_thres &amp; truth_vec==F, na.rm=T)/sum(truth_vec==F)) %&gt;%
+  ggplot(., aes(x=method, y=fdr_control, col=method)) +
+    facet_wrap(~prop_null) +
+    geom_violin() +
+    scale_color_manual(values=cols) </code></pre>
+<img src="figure/eval_initial.Rmd/unnamed-chunk-8-1.png" width="672" style="display: block; margin: auto;" /> <br> <br>
+<p>
+<button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
+<span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Session information
+</button>
+</p>
+<div id="workflowr-sessioninfo" class="collapse">
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 3.5.1 (2018-07-02)
+Platform: x86_64-pc-linux-gnu (64-bit)
+Running under: Scientific Linux 7.4 (Nitrogen)
+
+Matrix products: default
+BLAS/LAPACK: /software/openblas-0.2.19-el7-x86_64/lib/libopenblas_haswellp-r0.2.19.so
+
+locale:
+ [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              
+ [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    
+ [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   
+ [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 
+ [9] LC_ADDRESS=C               LC_TELEPHONE=C            
+[11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] pROC_1.13.0     bindrcpp_0.2.2  cowplot_0.9.3   forcats_0.3.0  
+ [5] stringr_1.3.1   dplyr_0.7.8     purrr_0.2.5     readr_1.3.1    
+ [9] tidyr_0.8.2     tibble_1.4.2    ggplot2_3.1.0   tidyverse_1.2.1
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_0.2.5   haven_1.1.2        lattice_0.20-38   
+ [4] colorspace_1.3-2   htmltools_0.3.6    yaml_2.2.0        
+ [7] rlang_0.3.0.1      pillar_1.3.0       glue_1.3.0        
+[10] withr_2.1.2        RColorBrewer_1.1-2 modelr_0.1.2      
+[13] readxl_1.1.0       bindr_0.1.1        plyr_1.8.4        
+[16] munsell_0.5.0      gtable_0.2.0       workflowr_1.2.0   
+[19] cellranger_1.1.0   rvest_0.3.2        evaluate_0.12     
+[22] labeling_0.3       knitr_1.20         broom_0.5.0       
+[25] Rcpp_1.0.0         scales_1.0.0       backports_1.1.2   
+[28] jsonlite_1.6       fs_1.2.6           hms_0.4.2         
+[31] digest_0.6.18      stringi_1.2.4      grid_3.5.1        
+[34] rprojroot_1.3-2    cli_1.0.1          tools_3.5.1       
+[37] magrittr_1.5       lazyeval_0.2.1     crayon_1.3.4      
+[40] pkgconfig_2.0.2    xml2_1.2.0         lubridate_1.7.4   
+[43] assertthat_0.2.0   rmarkdown_1.10     httr_1.3.1        
+[46] rstudioapi_0.8     R6_2.3.0           nlme_3.1-137      
+[49] git2r_0.23.0       compiler_3.5.1    </code></pre>
+</div>
+</div>
+
+
+<!-- Adjust MathJax settings so that all math formulae are shown using
+TeX fonts only; see
+http://docs.mathjax.org/en/latest/configuration.html.  This will make
+the presentation more consistent at the cost of the webpage sometimes
+taking slightly longer to load. Note that this only works because the
+footer is added to webpages before the MathJax javascript. -->
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+</script>
+
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+function bootstrapStylePandocTables() {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+}
+$(document).ready(function () {
+  bootstrapStylePandocTables();
+});
+
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
