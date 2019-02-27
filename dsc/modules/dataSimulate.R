@@ -56,7 +56,7 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
                      gselect = c("max", "random", "rand_max", "custom", "mean_max"),
                      gvec = NULL,
                      skip_gene = 0,
-                     signal_dist = c("big_normal", "near_normal"),
+                     signal_fun = c("big_normal","near_normal"),
                      signal_params = list(betapi=1, betamu=0, betasd=1),
                      prop_null = 1,
                      alpha = 0,
@@ -122,15 +122,17 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
     submat <- do.call(rbind, mclapply(1:nrow(submat), function(g) {
       submat[g,sample(ncol(submat))]
     }, mc.cores = ncores))
+  } else{
+    submat <- submat
   }
 
   ## Draw signal -------------------------------------------------------------
-  if (signal_dist=="big_normal") {
-    signal_params <- list(betapi=1, betamu=0, betasd=1)
-  } else {
-    signal_params <- list(betapi=c(2/3,1/3), betamu=c(0,0),
-                          betasd=c(1,2)/sqrt(2*nsamp-2))
-  }
+#  if (signal_fun=="big_normal") {
+#    signal_params <- list(betapi=1, betamu=0, betasd=1)
+#  } else {
+#    signal_params <- list(betapi=c(2/3,1/3), betamu=c(0,0),
+#                          betasd=c(1,2)/sqrt(2*nsamp-2))
+#  }
 
   make_normalmix <- function(nsignal, beta_args) {
     k <- length(beta_args$betapi) # number of components
@@ -142,7 +144,7 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
   nsignal <- round(ngene * (1 - prop_null))
   if (nsignal > 0) {
     signal_params$nsignal <- nsignal
-#    signal_vec      <- do.call(what = signal_dist, args = signal_params) ## log2-fold change
+#    signal_vec      <- do.call(what = signal_fun, args = signal_params) ## log2-fold change
     signal_vec <- make_normalmix(nsignal, signal_params)
 
     assertthat::are_equal(length(signal_vec), nsignal)
@@ -199,7 +201,14 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
 
 
 
-###############
+
+
+log2_cpm <- function() {}
+
+
+
+# older code ----------
+
 
 library(Matrix)
 
