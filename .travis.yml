@@ -17,7 +17,7 @@ install:
   - conda config --add channels conda-forge
   - conda info -a
   # Install conda packages
-  - travis_retry conda env create --file environment.yaml
+  - travis_retry travis_wait conda env create --file environment.yaml
 
 before_script:
   - source activate dsc-log-fold-change
