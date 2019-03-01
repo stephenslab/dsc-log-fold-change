@@ -55,6 +55,34 @@ Output:
 
 List methods we might want to use...
 
+# Installation
+
+We manage package installation using conda. Aftering installing conda, you have
+two options for installing the dependencies:
+
+1. Create a new environment with `conda-env`:
+    ```
+    conda env create --file environment.yaml
+    source activate dsc-log-fold-change
+    ```
+1. Directory install with `conda install`:
+    ```
+    conda config --add channels jdblischak
+    conda config --add channels defaults
+    conda config --add channels bioconda
+    conda config --add channels conda-forge
+    conda install --file requirements/conda-forge \
+                  --file requirements/bioconda \
+                  --file requirements/jdblischak
+    ```
+
+The advantage of the first option is convenience. It creates an environment and
+installs packages from specific channels, all in one step. The advantage of the
+second step is that it is faster and more robust.
+
+If you need to add a new package for the benchmark, please add it to both
+`environment.yaml` and to one of the files in `requirements/`.
+
 # Run DSC
 
 The main DSC file is `benchmarks.dsc`. To see what is available:
