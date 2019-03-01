@@ -17,9 +17,10 @@ install:
   - conda config --add channels conda-forge
   - conda info -a
   # Install conda packages
-  - travis_retry conda install --file=requirements/conda-forge --file=requirements/bioconda --file=requirements/jdblischak
+  - travis_retry conda env create --file environment.yaml
 
 before_script:
+  - source activate dsc-log-fold-change
   - conda list
   - dsc --version
 
