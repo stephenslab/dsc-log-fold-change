@@ -29,7 +29,8 @@ jobs:
             cd dsc/
             dsc --version
             dsc benchmark.dsc -h
-            dsc benchmark.dsc --truncate
+            dsc benchmark.dsc --truncate \
+              --target 'data * (edger,deseq2) * pval_rank * score'
       - store_artifacts:
           path: dsc/benchmark/
       - store_artifacts:
