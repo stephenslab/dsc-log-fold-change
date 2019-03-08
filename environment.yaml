@@ -15,6 +15,7 @@ dependencies:
 - bioconda::bioconductor-deseq2
 - bioconda::bioconductor-limma
 - bioconda::bioconductor-mast
+- bioconda::bioconductor-sva
 - bioconda::bioconductor-qvalue
 - bioconda::bioconductor-zinbwave
 - conda-forge::r-dplyr

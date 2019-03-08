@@ -1,0 +1,10 @@
+dsc=0.3.3
+jupyter
+r-devtools
+r-dplyr
+r-ggplot2
+r-knitr
+r-proc
+r-rcolorbrewer
+r-rmarkdown
+r-workflowr
