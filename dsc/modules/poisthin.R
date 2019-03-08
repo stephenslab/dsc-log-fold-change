@@ -26,7 +26,7 @@ library(parallel)
 #' @param gvec A logical of length \code{ncol(mat)}. A \code{TRUE} in position \eqn{i}
 #'     indicates inclusion into the smaller dataset. Hence, \code{sum(gvec)} should
 #'     equal \code{ngene}.
-#' @param shuffle_sample To shuffle sample per gene or not - suppose samples are correlated
+#' @param shuffle_sample TRUE to shuffle sample per gene. Suppose samples are correlated
 #'  across genes, shuffling sample labels at each gene would reduce sample correlation.
 #' @param signal_dist What's the distribution of beta - the true effecrs? Options
 #' 	include \code{"big_normal"} and \code{"near_normal"}.
@@ -118,7 +118,7 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
   group_indicator[sample(1:nsamp, size = floor(nsamp / 2))] <- TRUE
 
   ## Shuffle sample labels per gene or not
-  if (shuffle_sample) {
+  if (shuffle_sample==TRUE) {
     submat <- do.call(rbind, mclapply(1:nrow(submat), function(g) {
       submat[g,sample(ncol(submat))]
     }, mc.cores = ncores))
@@ -203,7 +203,7 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
 
 
 
-log2_cpm <- function() {}
+#log2_cpm <- function() {}
 
 
 
