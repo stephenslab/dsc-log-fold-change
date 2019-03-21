@@ -36,14 +36,8 @@ DSC:
     # generate simulated data
     data: data_poisthin
 
-#    # normalization
-#    count_normalize: log2_cpm
-
     # differential expression analysis
     method: edger, deseq2, limma_voom, t_test_log2cpm, t_test_log2cpm_quant, wilcoxon
-
-    # estimate latent confounding variables
-#    method_latent_factor: sva
 
     # scoring methods
     pval_rank: qvalue
@@ -86,7 +80,7 @@ data_poisthin: R(counts = readRDS(dataFile)) + \
 # method modules ------------------------------------------------------------------
 
 deseq2: deseq2.R + \
-      R(res <- run_deseq2(Y, X))
+      R(res <- deseq2(Y, X))
   Y: $Y
   X: $X
   $log_fold_change_est: res$est
@@ -94,7 +88,7 @@ deseq2: deseq2.R + \
   $pval: res$pval
 
 edger: edger.R + \
-      R(res <- run_edger(Y, X))
+      R(res <- edger(Y, X))
   Y: $Y
   X: $X
   $log_fold_change_est: res$est
@@ -103,7 +97,7 @@ edger: edger.R + \
 #genes are rows
 #input is raw counts
 glm_pois: glm.R + \
-          R(res <- run_glm(Y, X, family);
+          R(res <- glm(Y, X, family);
             est <- res$Estimate;
             se <- res$Std..Error;
             p <- res$Pr)
@@ -115,7 +109,7 @@ glm_pois: glm.R + \
   $pval: p
 
 glm_quasipois: glm.R + \
-          R(res <- run_glm(Y, X, family);
+          R(res <- glm(Y, X, family);
             est <- res$Estimate;
             se <- res$Std..Error;
             p <- res$Pr)
@@ -128,7 +122,7 @@ glm_quasipois: glm.R + \
 
 
 limma_voom: limma_voom.R + \
-       R(res <- run_limma_voom(Y, X))
+       R(res <- limma_voom(Y, X))
    Y: $Y
    X: $X
    $pval: res$pvalue
@@ -137,7 +131,7 @@ limma_voom: limma_voom.R + \
    $df: res$df
 
 mast: mast.R + \
-       R(res <- run_mast(Y, X))
+       R(res <- mast(Y, X))
    Y: $Y
    X: $X
    $pval: res$pval
@@ -145,53 +139,52 @@ mast: mast.R + \
    $s_hat: res$sebetahat
    $df: res$df
 
+sva: sva_voom.R + \
+    R(sva(Y, X, num_sv = num_sv))
+    Y: $Y
+    X: $X
+
 
 t_test_log2cpm: t_test.R + \
        R(counts=Y; libsize=colSums(counts); log2cpm=log2(t(10^6*(t(counts)/libsize)+1))) + \
-       R(res <- run_t_test(Y=log2cpm, X))
+       R(res <- t_test(Y=log2cpm, X))
    Y: $Y
    X: $X
    $pval: res[2,]
    $log_fold_change_est: res[1,]
 
-t_test_log2cpm_quant: t_test.R + \
-     R(counts=Y; libsize=colSums(counts); log2cpm=log2(t(10^6*(t(counts)/libsize)+1))) + \
-     R(log2cpm_qqnormed <- do.call(rbind, lapply(1:nrow(log2cpm), function(g) {qqnorm(log2cpm[g,])$x}))) + \
-   R(res <- run_t_test(Y=log2cpm_qqnormed, X))
+t_test_log2cpm_quant: t_test.R + normalize_counts.R \
+     R(log2cpm_qqnormed <- normalize_log2cpm(Y)) + \
+     R(res <- t_test(Y=log2cpm_qqnormed, X))
    Y: $Y
    X: $X
    $pval: res[2,]
    $log_fold_change_est: res[1,]
-
 
 wilcoxon: wilcoxon.R + \
-        R(res <- run_wilcoxon(Y, X))
+        R(res <- wilcoxon(Y, X))
    Y: $Y
    X: $X
    $pval: res[2,]
    $log_fold_change_est: res[1,]
 
 
-#zinbwave_deseq: methodsMeanExpression.R + \
-#      R(res <- run_zinbwave_deseq2(Y1,Y2))
+#zinbwave_deseq2: zinbwave_deseq2.R + \
+#      R(res <- zinbwave_deseq2(Y1,Y2))
 #   Y1: $Y1
 #   Y2: $Y2
 #   $pval: res$pval
 #   $log_fold_change_est: res$betahat
 
 
-#zinbwave_edger: methodsMeanExpression.R + \
-#      R(res <- run_zinbwave_edger(Y1,Y2))
+#zinbwave_edger: zinbwave_edger.R + \
+#      R(res <- zinbwave_edger(Y1,Y2))
 #   Y1: $Y1
 #   Y2: $Y2
 #   $pval: res$pval
 #   $log_fold_change_est: res$betahat
 
 
-#sva: methodsLatentFactor.R + \
-#    R(sva(Y, X, method = ))
-#    Y: $Y
-#    X: $X
 
 
 
