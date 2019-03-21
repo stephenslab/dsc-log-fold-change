@@ -1,4 +1,4 @@
-run_limma_voom <- function(Y, X){
+limma_voom <- function(Y, X){
 
   library(limma)
   #  Y <- as.matrix(cbind(Y1, Y2))

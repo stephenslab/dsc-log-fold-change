@@ -1,4 +1,4 @@
-run_zinbwave_deseq2 <- function(Y1, Y2){
+zinbwave_deseq2 <- function(Y1, Y2){
   library(DESeq2)
   library(zinbwave)
 

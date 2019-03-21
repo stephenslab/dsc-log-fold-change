@@ -1,4 +1,4 @@
-run_zinbwave_edger <- function(Y1, Y2){
+zinbwave_edger <- function(Y1, Y2){
   library(edgeR)
   library(zinbwave)
 

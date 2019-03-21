@@ -1,4 +1,4 @@
-run_edger <- function(Y, X) {
+edger <- function(Y, X) {
 
   library(edgeR)
 

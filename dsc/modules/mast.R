@@ -1,5 +1,4 @@
-run_mast_ed <- function(Y, X,
-                        pseudocount=1) {
+mast <- function(Y, X, pseudocount=1) {
 
   library(MAST)
   #  Y <- cbind(as.matrix(Y1), as.matrix(Y2))

@@ -1,4 +1,4 @@
-run_deseq2 <- function(Y, X) {
+deseq2 <- function(Y, X) {
 
   library(DESeq2)
   #  library(BiocParallel)

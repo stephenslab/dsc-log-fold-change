@@ -1,4 +1,4 @@
-run_glm <- function(Y, X, family) {
+glm <- function(Y, X, family) {
   #  Y <- cbind(Y1, Y2)
 
   #  x <- rep(c(0, 1), c(ncol(Y1), ncol(Y2)))
