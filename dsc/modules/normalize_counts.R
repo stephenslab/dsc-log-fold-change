@@ -1,8 +1,8 @@
 #' @param Y gene by sample
 #'
 normalize_log2cpm <- function(Y) {
-  libsize <- colSums(Y)
-  log2cpm <- log2(t(10^6*(t(Y)/libsize)+1)))
+  libsize <- base::colSums(Y)
+  log2cpm <- log2(t(10^6*(t(Y)/libsize)+1))
   log2cpm_qqnormed <- do.call(rbind,
                               lapply(1:nrow(log2cpm), function(g) {qqnorm(log2cpm[g,])$x}))
   return(log2cpm_qqnormed)
