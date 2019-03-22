@@ -1,5 +1,8 @@
 ## Experimental data 
 
+* GTEx V6 bulk expression data
+    + gtex_lung.rds: 320 samples and 16,069 genes.
+
 * PBMC data of 8+ cell types, 13,713 genes from 2,638 samples
     + Location: 'data/pbmc_counts.rds'
     + Experiment: single cell RNA-seq from 10X genomics  
