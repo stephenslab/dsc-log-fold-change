@@ -25,4 +25,4 @@ before_script:
 script:
   - cd dsc/
   - dsc benchmark.dsc -h
-  - dsc benchmark.dsc --truncate
+  - dsc benchmark.dsc --truncate -c 1 -v 3

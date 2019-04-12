@@ -6,7 +6,7 @@ channels:
 - jdblischak
 dependencies:
 # DSC
-- conda-forge::dsc=0.3.3
+- conda-forge::dsc=0.3.4
 - conda-forge::r-devtools
 - jdblischak::r-dscrutils
 # Benchmark
