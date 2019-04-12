@@ -1,4 +1,4 @@
-run_wilcoxon <- function(Y, X) {
+wilcoxon <- function(Y, X) {
   groupInd <- X[,2]
   Y1 <- Y[,groupInd==1]
   Y2 <- Y[,groupInd==0]

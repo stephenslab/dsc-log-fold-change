@@ -1,4 +1,4 @@
-run_t_test <- function(Y, X)
+t_test <- function(Y, X)
 {
   groupInd <- X[,2]
   Y1 <- Y[,groupInd==1]

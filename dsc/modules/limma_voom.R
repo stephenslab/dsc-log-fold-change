@@ -1,6 +1,7 @@
-run_limma_voom <- function(Y, X){
+limma_voom <- function(Y, X){
 
   library(limma)
+  library(edgeR)
   #  Y <- as.matrix(cbind(Y1, Y2))
 
   #  condition <- c(rep(1, ncol(Y1)), rep(2, ncol(Y2)))
