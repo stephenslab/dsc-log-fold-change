@@ -1,8 +1,13 @@
 # function directly copied from https://github.com/dsgerard/mouthwash_sims/Code/non_nc_methods.R
-sva_voom <- function(Y, X, num_sv) {
-  trash      <- capture.output(sva_out <- sva::sva(dat = t(Y), mod = X, n.sv = num_sv))
+sva_voom <- function(Y, X, num_sv=NULL) {
+
+  if (is.null(num_sv)) {
+    num_sv <- sva::num.sv(dat = Y, mod = X)
+    cat("num_sv = ", num_sv, "\n")
+  }
+  trash      <- capture.output(sva_out <- sva::sva(dat = Y, mod = X, n.sv = num_sv))
   X.sv       <- cbind(X, sva_out$sv)
-  voom_out   <- limma::voom(counts = t(Y), design = X.sv)
+  voom_out   <- limma::voom(counts = Y, design = X.sv)
   limma_out  <- limma::lmFit(object = voom_out)
   ebayes_out <- limma::ebayes(fit = limma_out)
   betahat    <- limma_out$coefficients[, 2]
