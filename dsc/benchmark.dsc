@@ -34,16 +34,17 @@
 DSC:
   define:
     # generate simulated data
-    data: data_poisthin, data_poisthin_null
+    data: data_poisthin_choose_betasd, data_poisthin_power, data_poisthin_null
 
     # differential expression analysis
-    method: edger, deseq2, limma_voom, t_test_log2cpm_quant, wilcoxon
+    method: edger, deseq2, limma_voom, sva_voom, t_test_log2cpm_quant, wilcoxon
 
     # scoring methods
     pval_rank: qvalue
     score: type_one_error, fdr, auc
   run:
-    pipe_power: data_poisthin * method * pval_rank
+    pipe_power_choose_betasd: data_poisthin_choose_betasd * (edger, limma_voom) * pval_rank
+    pipe_power: data_poisthin_power * method * pval_rank
     pipe_type1: data_poisthin_null * method * pval_rank
 
   exec_path: modules
@@ -54,18 +55,16 @@ DSC:
 
 # data modules ----------------------------------------------------------
 
-data_poisthin: R(counts = readRDS(dataFile)) + \
+data_poisthin_choose_betasd: R(counts = readRDS(dataFile)) + \
        poisthin.R + \
-       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, shuffle_sample=shuffle_sample, signal_fun=signal_fun, signal_params=list(betapi=1, betamu=0, betasd=betasd), prop_null = prop_null)) + \
+       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
        R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
   dataFile: "data/pbmc_counts.rds"
-  seed: R{2:11}
-  n1, n2: (45, 45), (250, 250)
+  seed: R{2:51}
+  n1, n2: (50, 50), (100, 100), (250, 250)
   ngene: 1000
   prop_null: .9
-  shuffle_sample: T, F
   gselect: "random"
-  signal_fun: "bignormal"
   betasd: .5, 1, 2, 4
   $Y: Y
   $X: X
@@ -73,19 +72,48 @@ data_poisthin: R(counts = readRDS(dataFile)) + \
 
 
 
-data_poisthin_null(data_poisthin): R(counts = readRDS(dataFile)) + \
+data_poisthin_power(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) + \
        poisthin.R + \
-       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, shuffle_sample=shuffle_sample, signal_fun=signal_fun, signal_params=list(betapi=1, betamu=0, betasd=betasd), prop_null = prop_null)) + \
+       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
+       R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
+  dataFile: "data/pbmc_counts.rds"
+  seed: R{2:51}
+  n1, n2: (50, 50), (250, 250)
+  ngene: 1000
+  prop_null: .9
+  gselect: "random"
+  betasd: 1
+  $Y: Y
+  $X: X
+  $beta: beta
+
+data_poisthin_null(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) + \
+       poisthin.R + \
+       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
+       R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
+  seed: R{2:101}
+  n1, n2: (50, 50), (250, 250)
+  ngene: 1000
+  prop_null: 1
+  gselect: "random"
+  betasd: 1
+  $Y: Y
+  $X: X
+  $beta: beta
+
+
+data_poisthin_libsize(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) + \
+       poisthin.R + \
+       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_fun=function(n) rep(5, n), signal_params=list(), prop_null = prop_null)) + \
        R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
   seed: R{2:11}
-  n1, n2: (45, 45), (250, 250)
-  ngene: 1000, 10000
-  prop_null: 1
-  shuffle_sample: T, F
+  n1, n2: (50, 50), (250, 250)
+  ngene: 1000
+  prop_null: 0
   gselect: "random"
-  signal_fun: "bignormal"
-  betasd: 1,
-
+  $Y: Y
+  $X: X
+  $beta: beta
 
 
 # method modules ------------------------------------------------------------------
@@ -150,10 +178,14 @@ mast: mast.R + \
    $s_hat: res$sebetahat
    $df: res$df
 
-sva: sva_voom.R + \
-    R(sva(Y, X, num_sv = num_sv))
+sva_voom: sva_voom.R + \
+    R(res <- sva_voom(Y, X))
     Y: $Y
     X: $X
+    $pval: res$pvalues
+    $log_fold_change_est: res$betahat
+    $s_hat: res$sebetahat
+    $df: res$df
 
 t_test_log2cpm_quant: t_test.R + normalize_counts.R + \
      R(log2cpm_qqnormed <- normalize_log2cpm(Y)) + \
