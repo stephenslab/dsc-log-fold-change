@@ -1,0 +1,122 @@
+---
+title: "Initial method evaluation: type I error"
+author: "Joyce Hsiao"
+date: "2019-04-22"
+output: 
+  workflowr::wflow_html:
+      toc: true
+      float: true
+---
+
+## Introduction
+
+* Evaluate type I error of some DE methods for data with potential confounded design
+
+* Assume equal library size for all samples
+
+* Experimental data: PBMC of 2,683 samples and ~ 11,000 genes, including 7+ cell types. This data has large number of zeros (93% zeros in the count matrix).
+
+* Simulation parameters
+  + number of genes: 1,000 randomly sampled from experimental data
+  + number of samples per group: (50, 50), (250, 250); draw n1+n2 from experimental data, then randomly assigned to group 1 or group 2
+  + fraction of true effects: .1
+  + distribution of true effects: normal distribution with mean 0 and sd 1
+  
+
+---
+
+## Extract dsc results
+
+```{r}
+knitr::opts_chunk$set(warning=F, message=F)
+
+library(dscrutils)
+library(tidyverse)
+```
+
+extract dsc output and get p-values, q-values, true signals, etc.
+
+```{r, warning=F, message=F, eval=F}
+dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_type1"
+
+dsc_res <- dscquery(dir_dsc, 
+                    targets=c("data_poisthin_null",
+                              "data_poisthin_null.seed", 
+                              "data_poisthin_null.n1",
+                              "method", "pval_rank"), 
+                    ignore.missing.file = T)
+
+method_vec <- as.factor(dsc_res$method)
+n_methods <- nlevels(method_vec)
+
+
+res <- vector("list",n_methods)
+for (i in 1:nrow(dsc_res)) {
+#  print(i)
+  fl_pval <- readRDS(file.path(dir_dsc,
+                       paste0(as.character(dsc_res$method.output.file[i]), ".rds")))
+  # fl_beta <- readRDS(file.path(dir_dsc,
+  #                  paste0(as.character(dsc_res$data_poisthin_null.output.file[i]), ".rds")))
+  seed <- dsc_res$data_poisthin_null.seed[i]
+  n1 <- dsc_res$data_poisthin_null.n1[i]
+  # fl_qval <- readRDS(file.path(dir_dsc,
+  #                    paste0(as.character(dsc_res$pval_rank.output.file[i]), ".rds")))
+  res[[i]] <- data.frame(method = as.character(dsc_res$method)[i],
+                         seed = seed,
+                         n1=n1,
+                         pval = fl_pval$pval,
+                         stringsAsFactors = F)
+}
+res_merge <- do.call(rbind, res)
+
+saveRDS(res_merge, file = "output/eval_initial_type1.Rmd/res_merge.rds")
+```
+
+
+
+## Analysis
+
+
+```{r, fig.width=12}
+res_merge <- readRDS(file = "output/eval_initial_type1.Rmd/res_merge.rds")
+
+make_plots <- function(res, alpha, labels,
+                       args=list(n1, labels)) {
+  n_methods <- length(unique(res$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
+  res %>% filter(n1==args$n1) %>% 
+    group_by(method, seed) %>%
+    summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval))) %>%
+#    group_by(method) %>%
+    # summarise(mn=mean(type1, na.rm=T), 
+    #           n=sum(!is.na(type1)), se=sd(type1, na.rm=T)/sqrt(n)) %>%
+    ggplot(., aes(x=method, y=type1, col=method)) +
+        # geom_errorbar(aes(ymin=mn+se, ymax=mn-se), width=.3) + 
+        geom_boxplot() + geom_point(size=.7) + xlab("") +
+      ylab("Type I error") +
+      scale_x_discrete(position = "top",
+                       labels=args$labels) +
+      scale_color_manual(values=cols) +
+      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+}
+
+library(cowplot)
+levels(factor(res_merge$method))
+labels <- c("deseq2", "edger", "limma_v", "sva_voom", "t_log2cpm_q", "wilcoxon")
+
+# title <- ggdraw() + draw_label("Type I error at alpha < .001 \n n: 50/group",
+#                                fontface='bold')
+p1 <- make_plots(res_merge, alpha=.001,
+                 args=list(n1=50, labels=labels)) + 
+                ggtitle("Type error at alpha < .001, 50/group") + #ylim(0,.02) +
+                geom_hline(yintercept=.001, col="gray30", lty=3)
+p1
+
+p2 <- make_plots(res_merge, alpha=.001,
+                 args=list(n1=250, labels=labels)) + 
+                ggtitle("Type error at alpha < .001, 250/group") + #ylim(0,.02) +
+                geom_hline(yintercept=.001, col="gray30", lty=3)
+p2
+```
+
+
