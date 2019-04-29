@@ -348,10 +348,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree78479d701471d317c41e286db8aa584919dbce8atargetblank78479d7a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/78479d701471d317c41e286db8aa584919dbce8a" target="_blank">78479d7</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreec422a07b0435b775095d49fbe36ca04f541e9ee1targetblankc422a07a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/c422a07b0435b775095d49fbe36ca04f541e9ee1" target="_blank">c422a07</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree78479d701471d317c41e286db8aa584919dbce8atargetblank78479d7a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreec422a07b0435b775095d49fbe36ca04f541e9ee1targetblankc422a07a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -369,10 +369,9 @@ Ignored files:
 
 Untracked files:
     Untracked:  analysis/eval_initial_type1_libsize.Rmd
-    Untracked:  dsc/Rplots.pdf
 
 Unstaged changes:
-    Modified:   analysis/eval_initial.Rmd
+    Modified:   analysis/index.Rmd
     Modified:   dsc/benchmark.dsc
     Modified:   dsc/benchmark.sh
 
@@ -413,6 +412,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/c422a07b0435b775095d49fbe36ca04f541e9ee1/analysis/eval_initial_type1.Rmd" target="_blank">c422a07</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+<td>
+overlay median and mean of type I error
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/ffdcfcc9c1fdc4bee07b92bb6e31ffb6e3085439/docs/eval_initial_type1.html" target="_blank">ffdcfcc</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -527,12 +560,12 @@ initial type I error eval results
 
 library(dscrutils)
 library(tidyverse)</code></pre>
-<pre><code>── Attaching packages ───────────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
+<pre><code>── Attaching packages ─────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
 <pre><code>✔ ggplot2 3.1.0       ✔ purrr   0.3.2  
 ✔ tibble  2.1.1       ✔ dplyr   0.8.0.1
 ✔ tidyr   0.8.3       ✔ stringr 1.3.1  
 ✔ readr   1.3.1       ✔ forcats 0.3.0  </code></pre>
-<pre><code>── Conflicts ──────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+<pre><code>── Conflicts ────────────────────────────────────────────────────────── tidyverse_conflicts() ──
 ✖ dplyr::filter() masks stats::filter()
 ✖ dplyr::lag()    masks stats::lag()</code></pre>
 <p>extract dsc output and get p-values, q-values, true signals, etc.</p>
@@ -600,8 +633,10 @@ levels(factor(res_merge$method))</code></pre>
 [4] &quot;t_test&quot;               &quot;t_test_log2cpm_quant&quot; &quot;wilcoxon&quot;            </code></pre>
 <pre class="r"><code>p1 &lt;- make_plots(res_merge, alpha=.001,
                  args=list(n1=50, labels=labels)) + 
-                ggtitle(&quot;Type error at alpha &lt; .001, 50/group&quot;) + ylim(0,.03) +
-                geom_hline(yintercept=.001, col=&quot;gray30&quot;, lty=1) 
+                ggtitle(&quot;Type error at alpha &lt; .001, 50/group&quot;) + ylim(0,.025) +
+                geom_hline(yintercept=.001, col=&quot;gray30&quot;, lty=3) +
+                stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=6, col=&quot;black&quot;) +
+                stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)
 p1</code></pre>
 <p><img src="figure/eval_initial_type1.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
@@ -626,6 +661,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/ffdcfcc9c1fdc4bee07b92bb6e31ffb6e3085439/docs/figure/eval_initial_type1.Rmd/unnamed-chunk-3-1.png" target="_blank">ffdcfcc</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/2b9140ecdec1da37672973781b003b066e5c3e1f/docs/figure/eval_initial_type1.Rmd/unnamed-chunk-3-1.png" target="_blank">2b9140e</a>
@@ -663,7 +709,9 @@ Joyce Hsiao
 p2 &lt;- make_plots(res_merge, alpha=.001,
                  args=list(n1=250, labels=labels)) + 
                 ggtitle(&quot;Type error at alpha &lt; .001, 250/group&quot;) + ylim(0,.03) +
-                geom_hline(yintercept=.001, col=&quot;gray30&quot;, lty=3)
+                geom_hline(yintercept=.001, col=&quot;gray30&quot;, lty=3) +
+                stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=6, col=&quot;black&quot;) +
+                stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)
 p2</code></pre>
 <p><img src="figure/eval_initial_type1.Rmd/unnamed-chunk-3-2.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
@@ -688,6 +736,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/ffdcfcc9c1fdc4bee07b92bb6e31ffb6e3085439/docs/figure/eval_initial_type1.Rmd/unnamed-chunk-3-2.png" target="_blank">ffdcfcc</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/2b9140ecdec1da37672973781b003b066e5c3e1f/docs/figure/eval_initial_type1.Rmd/unnamed-chunk-3-2.png" target="_blank">2b9140e</a>
@@ -744,7 +803,9 @@ p1 &lt;- make_plots_log2(res_merge, alpha=.001,
                  args=list(n1=50, labels=labels)) + 
                 ggtitle(&quot;Type I error at alpha &lt; .001, 50/group&quot;) + #ylim(0,.03) +
                 geom_hline(yintercept=log2(.001), col=&quot;gray30&quot;, lty=3) +
-                ylab(&quot;log2 type I error&quot;) 
+                ylab(&quot;log2 type I error&quot;) +
+                stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=6, col=&quot;black&quot;) +
+                stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)
 p1</code></pre>
 <p><img src="figure/eval_initial_type1.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
@@ -784,7 +845,15 @@ Joyce Hsiao
 </table>
 </div>
 </div>
-<pre class="r"><code># a &lt;- res_merge[res_merge$n1==50 &amp; res_merge$method==&quot;wilcoxon&quot;,] %&gt;%
+<pre class="r"><code># 
+# p1 &lt;- make_plots(res_merge, alpha=.001,
+#                  args=list(n1=50, labels=labels)) + 
+#                 ggtitle(&quot;Type error at alpha &lt; .001, 50/group&quot;) + ylim(0,.025) +
+#                 geom_hline(yintercept=.001, col=&quot;gray30&quot;, lty=3) +
+#                 
+# p1
+
+# a &lt;- res_merge[res_merge$n1==50 &amp; res_merge$method==&quot;wilcoxon&quot;,] %&gt;%
 #   group_by(seed) %&gt;%
 #   summarise(type1=mean(pval&lt;.001, na.rm=T), nvalid=sum(!is.na(pval)))
 
@@ -792,7 +861,9 @@ p2 &lt;- make_plots_log2(res_merge, alpha=.001,
                  args=list(n1=250, labels=labels)) + 
                 ggtitle(&quot;Type error at alpha &lt; .001, 250/group&quot;) + 
                 geom_hline(yintercept=log2(.001), col=&quot;gray30&quot;, lty=3) +
-                ylab(&quot;log2 type I error&quot;) 
+                ylab(&quot;log2 type I error&quot;) +
+                stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=6, col=&quot;black&quot;) +
+                stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)
 p2</code></pre>
 <p><img src="figure/eval_initial_type1.Rmd/unnamed-chunk-4-2.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
