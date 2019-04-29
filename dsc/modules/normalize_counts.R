@@ -4,7 +4,7 @@ normalize_log2cpm <- function(Y) {
   libsize <- base::colSums(Y)
   log2cpm <- log2(t(10^6*(t(Y+.5)/libsize)))
   log2cpm_qqnormed <- do.call(rbind,
-                              lapply(1:nrow(log2cpm), function(g) {qqnorm(log2cpm[g,])$x}))
+                              lapply(1:nrow(log2cpm), function(g) {qqnorm(log2cpm[g,], plot.it=F)$x}))
   return(log2cpm_qqnormed)
 }
 
