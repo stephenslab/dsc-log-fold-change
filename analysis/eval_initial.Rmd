@@ -95,7 +95,7 @@ saveRDS(res_merge, file = "output/eval_initial.Rmd/res_merge.rds")
 
 ## Analyze
 
-```{r}
+```{r plot_results, fig.width=12}
 res_merge <- readRDS(file = "output/eval_initial.Rmd/res_merge.rds")
 
 fdr_thres <- .1
