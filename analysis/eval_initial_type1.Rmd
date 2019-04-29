@@ -1,7 +1,7 @@
 ---
 title: "Initial method evaluation: type I error"
 author: "Joyce Hsiao"
-date: "2019-04-22"
+date: "2019-04-29"
 output: 
   workflowr::wflow_html:
       toc: true
@@ -102,21 +102,72 @@ make_plots <- function(res, alpha, labels,
 
 library(cowplot)
 levels(factor(res_merge$method))
-labels <- c("deseq2", "edger", "limma_v", "sva_voom", "t_log2cpm_q", "wilcoxon")
 
-# title <- ggdraw() + draw_label("Type I error at alpha < .001 \n n: 50/group",
-#                                fontface='bold')
 p1 <- make_plots(res_merge, alpha=.001,
                  args=list(n1=50, labels=labels)) + 
-                ggtitle("Type error at alpha < .001, 50/group") + #ylim(0,.02) +
-                geom_hline(yintercept=.001, col="gray30", lty=3)
+                ggtitle("Type error at alpha < .001, 50/group") + ylim(0,.03) +
+                geom_hline(yintercept=.001, col="gray30", lty=1) 
 p1
+
+# # excluded edger
+# labels <- c("deseq2", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
+# p1 <- make_plots(subset(res_merge, method!="edger"), alpha=.001,
+#                  args=list(n1=50, labels=labels)) + 
+#                 ggtitle("Type error at alpha < .001, 50/group") + ylim(0,.02) +
+#                 geom_hline(yintercept=.001, col="gray30", lty=3) 
+# p1
 
 p2 <- make_plots(res_merge, alpha=.001,
                  args=list(n1=250, labels=labels)) + 
-                ggtitle("Type error at alpha < .001, 250/group") + #ylim(0,.02) +
+                ggtitle("Type error at alpha < .001, 250/group") + ylim(0,.03) +
                 geom_hline(yintercept=.001, col="gray30", lty=3)
 p2
 ```
 
+
+log2 scale
+
+```{r}
+make_plots_log2 <- function(res, alpha, labels,
+                       args=list(n1, labels)) {
+  n_methods <- length(unique(res$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
+  res %>% filter(n1==args$n1) %>% 
+    group_by(method, seed) %>%
+    summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval))) %>%
+#    group_by(method) %>%
+    # summarise(mn=mean(type1, na.rm=T), 
+    #           n=sum(!is.na(type1)), se=sd(type1, na.rm=T)/sqrt(n)) %>%
+    ggplot(., aes(x=method, y=log2(type1), col=method)) +
+        # geom_errorbar(aes(ymin=mn+se, ymax=mn-se), width=.3) + 
+        geom_boxplot() + geom_point(size=.7) + xlab("") +
+      scale_x_discrete(position = "top",
+                       labels=args$labels) +
+      scale_color_manual(values=cols) +
+      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+}
+
+library(cowplot)
+levels(factor(res_merge$method))
+labels <- c("deseq2", "edger", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
+
+p1 <- make_plots_log2(res_merge, alpha=.001,
+                 args=list(n1=50, labels=labels)) + 
+                ggtitle("Type I error at alpha < .001, 50/group") + #ylim(0,.03) +
+                geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
+                ylab("log2 type I error") 
+p1
+
+
+# a <- res_merge[res_merge$n1==50 & res_merge$method=="wilcoxon",] %>%
+#   group_by(seed) %>%
+#   summarise(type1=mean(pval<.001, na.rm=T), nvalid=sum(!is.na(pval)))
+
+p2 <- make_plots_log2(res_merge, alpha=.001,
+                 args=list(n1=250, labels=labels)) + 
+                ggtitle("Type error at alpha < .001, 250/group") + 
+                geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
+                ylab("log2 type I error") 
+p2
+```
 
