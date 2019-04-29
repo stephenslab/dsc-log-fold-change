@@ -8,12 +8,13 @@ output:
 
 Project website for benchmarking methods for single-cell DE methods. 
 
-* Differential expression methods initial evaluations using PBMC dataset
-    * Initial evals focusing on sample sizes per group (50, 250)
-    * Results on relationships between sample size, power and effect size; [RESULTS](eval_initial.html)
+* Initial evaluations using PBMC dataset
+    * Objectives:
+        + Performances undering large sample size (e.g., 50, 250)
+        + Focusing on generic methods: not yet tailored methods for single-cell data
+    * Effect size, power and sample size [RESULTS](eval_initial.html)
     * Power and false discovery rate: betasd=1, 1K genes drawn randomly, 10% true effects [RESULTS](eval_initial_power.html)
     * Type I error: betasd=1, 1K genes drawn randomly [RESULTS](eval_initial_type1.html)
-
 
 
 
