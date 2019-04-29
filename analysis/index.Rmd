@@ -8,23 +8,28 @@ output:
 
 Project website for benchmarking methods for single-cell DE methods. 
 
-* [Initial results on method evaluation](eval_initial.html)
+* Initial evaluations using PBMC dataset
+    * Objectives:
+        + Performances undering large sample size (e.g., 50, 250)
+        + Focusing on generic methods: not yet tailored methods for single-cell data
+    * Effect size, power and sample size [RESULTS](eval_initial.html)
+    * Power and false discovery rate: betasd=1, 1K genes drawn randomly, 10% true effects [RESULTS](eval_initial_power.html)
+    * Type I error: betasd=1, 1K genes drawn randomly [RESULTS](eval_initial_type1.html)
 
+
+
+* Data curation procedure described [here](../dsc/data/README.md).
+    * 10x Genomics PBMC dataset. 
 
 ---
 
-* Investigate Type I error control in simulated null datasets
-    * Using [single-cell real dataset (10X PBMC data)](test.html), and consider two scenarios:
-      * Case 1: Replicate results in Berge et al., 2018.  
-      * Case 2: Assess type I error as a function of sample size. (45 and 300) 
-      * Note that data used in Case 1 was curated as described in Van den Berge et al., 2018, see [here](pbmc_berge_null.html) for steps. 
+## One-time investigations
 
-* Power evaluation 
-    * Using [Van den Berge et al. 2018 simulated data](sim_power_berge_pbmc_results.html), generated here using their [code](sim_power_berge_pbmc.html)
+* Replicate results in Van den Berge et al., 2018
+    * Curate PBMC dataset using [their code](pbmc_berge_null.html)
+    * Simulate scRNA-seq data with signals using [their code](sim_power_berge_pbmc.html)
     
-
-* Data curation procedure is described [here](../dsc/data/README.md).
-    * 10x Genomics PBMC dataset. 
+    
 
 
     

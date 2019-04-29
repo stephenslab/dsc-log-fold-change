@@ -1,0 +1,393 @@
+---
+title: "Initial method evaluation: power"
+author: "Joyce Hsiao"
+date: "2019-04-26"
+output: 
+  workflowr::wflow_html:
+      toc: true
+      float: true
+---
+
+## Introduction
+
+* Evaluate power of some DE methods for data with potential confounded design
+
+* Experimental data: PBMC of 2,683 samples and ~ 11,000 genes, including 7+ cell types. This data has large number of zeros (93% zeros in the count matrix).
+
+* Simulation parameters
+  + number of genes: 1,000 randomly sampled from experimental data
+  + number of samples per group: (50, 50), (250, 250); draw n1+n2 from experimental data, then randomly assigned to group 1 or group 2
+  + fraction of true effects: .1
+  + distribution of true effects: normal distribution with mean 0 and sd 1
+  
+
+
+---
+
+## Extract dsc results
+
+```{r}
+knitr::opts_chunk$set(warning=F, message=F)
+
+library(dscrutils)
+library(tidyverse)
+```
+
+extract dsc output and get p-values, q-values, true signals, etc.
+
+```{r out_dsc_results, warning=F, message=F, eval=F}
+dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_power"
+
+dsc_res <- dscquery(dir_dsc, 
+                    targets=c("data_poisthin_power",
+                              "data_poisthin_power.seed", 
+                              "data_poisthin_power.n1",
+                              "method", "pval_rank"), 
+                    ignore.missing.file = T)
+
+method_vec <- as.factor(dsc_res$method)
+n_methods <- nlevels(method_vec)
+
+res <- vector("list",n_methods)
+for (i in 1:nrow(dsc_res)) {
+  print(i)
+  fl_pval <- readRDS(file.path(dir_dsc,
+                       paste0(as.character(dsc_res$method.output.file[i]), ".rds")))
+  fl_beta <- readRDS(file.path(dir_dsc,
+                   paste0(as.character(dsc_res$data_poisthin_power.output.file[i]), ".rds")))
+  seed <- dsc_res$data_poisthin_power.seed[i]
+  n1 <- dsc_res$data_poisthin_power.n1[i]
+  fl_qval <- readRDS(file.path(dir_dsc,
+                      paste0(as.character(dsc_res$pval_rank.output.file[i]), ".rds")))
+  res[[i]] <- data.frame(method = as.character(dsc_res$method)[i],
+                         seed = seed,
+                         n1=n1,
+                         truth_vec = fl_beta$beta != 0,
+                         pval = fl_pval$pval,
+                         qval = fl_qval$qval,
+                         stringsAsFactors = F)
+  roc_output <- pROC::roc(truth_vec ~ pval, data=res[[i]])
+  res[[i]]$auc <- roc_output$auc
+}
+res_merge <- do.call(rbind, res)
+
+saveRDS(res_merge, file = "output/eval_initial_power.Rmd/res_merge_power.rds")
+```
+
+
+## False discovery rate control
+
+```{r plot_fdr}
+res_merge <- readRDS(file = "output/eval_initial_power.Rmd/res_merge_power.rds")
+
+make_plots <- function(res, args=list(n1, labels), title) {
+  fdr_thres <- .1
+  n_methods <- length(unique(res$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
+  library(cowplot)
+  title <- ggdraw() + draw_label(title, fontface='bold')
+  p1 <- res %>% group_by(method, seed) %>%
+        filter(n1 == args$n1) %>%
+        summarise(power = sum(qval < fdr_thres & truth_vec==TRUE, na.rm=T)/sum(truth_vec==TRUE)) %>%
+        ggplot(., aes(x=method, y=power, col=method)) + 
+              geom_boxplot() + geom_point() +   
+              xlab("") + ylab("Power") +
+            scale_x_discrete(position = "top",
+                             labels=args$labels) +
+            scale_color_manual(values=cols) +
+        ggtitle(paste("Power at q-value < ", fdr_thres, "(total 1K)")) +
+        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+
+  p2 <- res %>% group_by(method, seed) %>%
+        filter(n1 == args$n1) %>%
+        summarise(false_pos_rate = sum(qval < fdr_thres & truth_vec==F, na.rm=T)/sum(qval < fdr_thres,
+                                                                                     na.rm=T)) %>%
+        ggplot(., aes(x=method, y=false_pos_rate, col=method)) +
+            geom_boxplot() + geom_point() +  
+            xlab("") + ylab("False discovery rate") +
+            scale_x_discrete(position = "top",
+                             labels=args$labels) +
+            scale_color_manual(values=cols) +
+            geom_hline(yintercept=.1, col="gray40", lty=3) + 
+        ggtitle(paste("FDR at q-value < ", fdr_thres, "(total 1K)")) + 
+        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+
+  print(plot_grid(title, plot_grid(p1,p2), ncol=1, rel_heights = c(.1,1)))
+}
+
+levels(factor(res_merge$method))
+labels <- c("deseq2", "edger", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
+
+make_plots(res_merge, args=list(n1=50, labels=labels), 
+       title="pi0=.9, 1K genes, beta /sim N(0,1), 50/group")
+  
+make_plots(res_merge, args=list(n1=250, labels=labels), 
+       title="pi0=.9, 1K genes, beta /sim N(0,1), 250/group")
+```
+
+
+## AUC
+
+```{r plot_auc}
+res_merge <- readRDS(file = "output/eval_initial_power.Rmd/res_merge_power.rds")
+
+library(dplyr)
+res_merge_auc <- res_merge %>% group_by(method, seed, n1) %>% slice(1)
+
+make_plots_auc <- function(res, args=list(n1, labels), title) {
+  n_methods <- length(unique(res$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
+  res %>% group_by(method) %>%
+      filter(n1 == args$n1) %>%
+      ggplot(., aes(x=method, y=auc, col=method)) +
+          geom_boxplot() + geom_point() +  
+          xlab("") + ylab("Area under the ROC curve") +
+          scale_x_discrete(position = "top",
+                           labels=args$labels) +
+          scale_color_manual(values=cols) +
+      ggtitle("AUC") + 
+      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+}
+
+levels(factor(res_merge_auc$method))
+labels <- c("deseq2", "edger", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
+make_plots_auc(res_merge_auc, args=list(n1=50, labels=labels))
+
+
+levels(factor(res_merge_auc$method))
+labels <- c("deseq2", "edger", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
+make_plots_auc(res_merge_auc, args=list(n1=250, labels=labels))
+```
+
+
+## ROC
+
+```{r plot_roc}
+get_roc_est <- function(res_merge, n1, fpr_nbin=500) {
+    method_list <- levels(factor(res_merge$method))
+    seed_list <- unique(res_merge$seed)
+
+    out_roc_est <- lapply(1:length(method_list), function(i) {
+      df_sub <- res_merge %>% filter(method==method_list[i] & n1==n1)
+      roc_est_seed <- lapply(1:length(seed_list), function(j) {
+        roc_set_seed_one <- with(df_sub[df_sub$seed==seed_list[j],],
+                                 pROC::auc(response=truth_vec, predictor=pval))
+        fpr <- 1-attr(roc_set_seed_one, "roc")$specificities
+        tpr <- attr(roc_set_seed_one, "roc")$sensitivities
+        data.frame(fpr=fpr,tpr=tpr,seed=seed_list[j])
+      })
+      roc_est_seed <- do.call(rbind, roc_est_seed)
+      fpr_range <- range(roc_est_seed$fpr)
+      fpr_seq <- seq.int(from=fpr_range[1], to = fpr_range[2], length.out = fpr_nbin+1)
+      tpr_est_mean <- rep(NA, fpr_nbin)
+      for (index in 1:fpr_nbin) {
+        tpr_est_mean[index] <- mean( roc_est_seed$tpr[which(roc_est_seed$fpr >= fpr_seq[index] & roc_est_seed$fpr < fpr_seq[index+1])], na.rm=T) 
+      }
+      fpr_bin_mean <- fpr_seq[-length(fpr_seq)]+(diff(fpr_seq)/2)
+      roc_bin_est <- data.frame(fpr_bin_mean=fpr_bin_mean,tpr_est_mean=tpr_est_mean)
+      roc_bin_est <- roc_bin_est[!is.na(roc_bin_est$tpr_est_mean),]
+      roc_bin_est$method <- method_list[i]
+      return(roc_bin_est)
+    }) 
+    out <- do.call(rbind, out_roc_est)
+    out$method <- factor(out$method)
+    return(out)
+}
+
+
+roc_est_50 <- get_roc_est(res_merge, n1=50, fpr_nbin=500)
+roc_est_50$method <- factor(roc_est_50$method)
+ggplot(subset(roc_est_50, fpr_bin_mean < .15 | tpr_est_mean < .15), 
+       aes(x=fpr_bin_mean, y=tpr_est_mean, col=method)) +
+  geom_step() + xlab("False discovery rate") + ylab("Sensitivity") +
+  ggtitle("Sensitivity and false discovery rate (ROC curve)")
+
+
+roc_est_250 <- get_roc_est(res_merge, n1=250, fpr_nbin=500)
+roc_est_250$method <- factor(roc_est_250$method)
+ggplot(subset(roc_est_250, fpr_bin_mean < .15 | tpr_est_mean < .15), 
+       aes(x=fpr_bin_mean, y=tpr_est_mean, col=method)) +
+  geom_step() + xlab("False discovery rate") + ylab("Sensitivity") +
+  ggtitle("Sensitivity and false discovery rate (ROC curve)")
+```
+
+
+
+## Old 
+
+Some plotting and summary functions
+
+```{r, eval = F}
+# type I error related functions ----------
+plot_oneiter_pval <- function(pvals_res_oneiter, cols, seed=1, bins=30) {
+    n_methods <- length(unique(pvals_res_oneiter$method))
+    print(
+    ggplot(pvals_res_oneiter, aes(x=pval, fill=method)) +
+            facet_wrap(~method) +
+            geom_histogram(bins=bins) +
+#            xlim(xlims[1],xlims[2]) +
+            scale_fill_manual(values=cols)  )
+}
+
+plot_oneiter_qq <- function(pvals_res_oneiter, cols, plot_overlay=T,
+                   title_label=NULL, xlims=c(0,1), pch.type="S") {
+    methods <- unique(pvals_res_oneiter$method)
+    n_methods <- length(methods)
+    
+    if(plot_overlay) {
+    print(
+    ggplot(pvals_res_oneiter, aes(sample=pval, col=method)) +
+            stat_qq(cex=.7) +
+            scale_color_manual(values=cols)  )
+    } else {
+    print(
+    ggplot(pvals_res_oneiter, aes(sample=pval, col=method)) +
+            facet_wrap(~method) +
+            stat_qq(cex=.7) +
+            scale_color_manual(values=cols)  )
+    }
+}
+
+# power related functions ----------
+
+get_roc_est <- function(pvals_res, fpr_nbin=100) {
+    method_list <- levels(factor(pvals_res$method))
+    seed_list <- unique(pvals_res$seed)
+    
+    out_roc_est <- lapply(1:length(method_list), function(i) {
+      df_sub <- pvals_res %>% filter(method==method_list[i] & prop_null==prop_null)
+      roc_est_seed <- lapply(1:length(seed_list), function(j) {
+        roc_set_seed_one <- with(df_sub[df_sub$seed==seed_list[j],],
+                                 pROC::auc(response=truth_vec, predictor=qval))
+        fpr <- 1-attr(roc_set_seed_one, "roc")$specificities
+        tpr <- attr(roc_set_seed_one, "roc")$sensitivities
+        data.frame(fpr=fpr,tpr=tpr,seed=seed_list[j])
+      })
+      roc_est_seed <- do.call(rbind, roc_est_seed)
+      fpr_range <- range(roc_est_seed$fpr)
+      fpr_seq <- seq.int(from=fpr_range[1], to = fpr_range[2], length.out = fpr_nbin+1)
+      tpr_est_mean <- rep(NA, fpr_nbin)
+      for (index in 1:fpr_nbin) {
+        tpr_est_mean[index] <- mean( roc_est_seed$tpr[which(roc_est_seed$fpr >= fpr_seq[index] & roc_est_seed$fpr < fpr_seq[index+1])], na.rm=T) 
+      }
+      fpr_bin_mean <- fpr_seq[-length(fpr_seq)]+(diff(fpr_seq)/2)
+      roc_bin_est <- data.frame(fpr_bin_mean=fpr_bin_mean,tpr_est_mean=tpr_est_mean)
+      roc_bin_est <- roc_bin_est[!is.na(roc_bin_est$tpr_est_mean),]
+      roc_bin_est$method <- method_list[i]
+      return(roc_bin_est)
+    }) 
+    out <- do.call(rbind, out_roc_est)
+    out$method <- factor(out$method)
+    return(out)
+}
+
+# Type I error 
+
+
+library(tidyverse)
+plot_type1 <- function(res, alpha, labels,
+                       args=list(prop_null, shuffle_sample, betasd,
+                                 labels)) {
+  n_methods <- length(unique(res$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
+  res %>% filter(prop_null==args$prop_null & shuffle_sample == args$shuffle_sample & betasd == args$betasd) %>% 
+    group_by(method, seed) %>%
+    summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval))) %>%
+#    mutate(type1=replace(type1, type1==0, NA)) %>%
+    group_by(method) %>%
+    summarise(mn=mean(type1, na.rm=T), 
+              n=sum(!is.na(type1)), se=sd(type1, na.rm=T)/sqrt(n)) %>%
+    ggplot(., aes(x=method, y=mn, col=method)) +
+        geom_errorbar(aes(ymin=mn+se, ymax=mn-se), width=.3) + 
+        geom_line() + geom_point() + xlab("") +
+      ylab("mean Type I error +/- s.e.") +
+      scale_x_discrete(position = "top",
+                       labels=args$labels) +
+      scale_color_manual(values=cols)
+}
+
+## FDR control at .1
+plot_fdr <- function(res, args=list(prop_null, shuffle_sample, betasd), title) {
+  fdr_thres <- .1
+  n_methods <- length(unique(res$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
+  library(cowplot)
+  title <- ggdraw() + draw_label(title, fontface='bold')
+p1 <- res %>% group_by(method, seed, prop_null) %>%
+      filter(prop_null == args$prop_null & shuffle_sample==args$shuffle_sample & args$betasd==betasd) %>%
+      summarise(pos_sum = sum(qval < fdr_thres, na.rm=T)) %>%
+      group_by(method, prop_null) %>%
+      summarise(pos_sum_mn = mean(pos_sum),
+                pos_sum_n = sum(!is.na(pos_sum)),
+                pos_sum_se = sd(pos_sum)/sqrt(pos_sum_n)) %>%
+      ggplot(., aes(x=method, y=pos_sum_mn, col=method)) +
+        geom_errorbar(aes(ymin=pos_sum_mn-pos_sum_se, 
+                          ymax=pos_sum_mn+pos_sum_se), width=.3) + 
+            geom_line() + geom_point() + xlab("") +
+          ylab("mean count of significant cases +/- s.e.") +
+          scale_x_discrete(position = "top",
+                           labels=c("deseq2", "edger", "glm_q",
+                                    "limma_v", "mast", "t_test", "wilcox")) +
+          scale_color_manual(values=cols) +
+      ggtitle(paste("No. genes at q-value < ", fdr_thres, "(total 1K)"))
+p2 <- res %>% group_by(method, seed, prop_null) %>%
+    filter(prop_null == args$prop_null & shuffle_sample==args$shuffle_sample & betasd ==args$betasd) %>%
+    summarise(false_pos_rate = sum(qval < fdr_thres & truth_vec==F, na.rm=T)/sum(qval < fdr_thres,
+                                                                                 na.rm=T)) %>%
+    group_by(method, prop_null) %>%
+    summarise(false_pos_rate_mn = mean(false_pos_rate),
+              false_pos_rate_n = sum(!is.na(false_pos_rate)),
+              false_pos_rate_se = sd(false_pos_rate)/sqrt(false_pos_rate_n)) %>%
+    ggplot(., aes(x=method, y=false_pos_rate_mn, col=method)) +
+      geom_errorbar(aes(ymin=false_pos_rate_mn-false_pos_rate_se, 
+                        ymax=false_pos_rate_mn+false_pos_rate_se), width=.3) + 
+          geom_line() + geom_point() +  xlab("") +
+    geom_hline(yintercept=.1, col="gray40", lty=3) + 
+        ylab("mean false postive rate +/- s.e.") +
+        ggtitle(paste("Mean false discovery rate at q-value < ", fdr_thres)) +
+        scale_x_discrete(position = "top",
+                         labels=c("deseq2", "edger", "glm_q",
+                                  "limma_v", "mast", "t_test", "wilcox")) +
+        scale_color_manual(values=cols)
+
+  print(plot_grid(title, plot_grid(p1,p2), ncol=1, rel_heights = c(.1,1)))
+}
+
+## Power: Mean AUC 
+plot_roc <- function(roc_est, cols,
+                     title_label=NULL) {
+  n_methods <- length(unique(roc_est$method))
+  print(
+    ggplot(roc_est, aes(x=fpr_bin_mean, 
+                        y=tpr_est_mean, col=method)) +
+      # geom_hline(yintercept=alpha, 
+      #         color = "red", size=.5) +
+      geom_step() +
+      scale_color_manual(values=cols) 
+    )
+}
+
+# AUC ----------
+plot_auc <- function(res, args=list(prop_null, shuffle_sample, betasd)) {
+  library(pROC)
+  n_methods <- length(unique(res$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
+  res %>% group_by(method, seed) %>%
+    filter(prop_null == args$prop_null & shuffle_sample == args$shuffle_sample & betasd == args$betasd) %>%
+    summarise(auc_est=roc(response=truth_vec, predictor=qval)$auc) %>%
+    group_by(method) %>%
+    summarise(auc_mean=mean(auc_est),
+              auc_n = sum(!is.na(auc_est)),
+              auc_se = sd(auc_est)/sqrt(auc_n)) %>%
+    ggplot(., aes(x=method, y=auc_mean, col=method)) +
+      geom_errorbar(aes(ymin=auc_mean-auc_se, 
+                        ymax=auc_mean+auc_se), width=.3) + 
+          geom_line() + geom_point() +  xlab("") +
+      ylab("mean AUC +/- s.e.") +
+      scale_color_manual(values=cols) +
+      scale_x_discrete(position = "top",
+                       labels=c("deseq2", "edger", "glm_q", 
+                                "limma_v", "mast", "t_test", "wilcox"))
+}
+```
+

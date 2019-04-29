@@ -1,4 +1,3 @@
-library(parallel)
 #' Apply Poisson thinning to a matrix of count data.
 #'
 #' Given a matrix of RNA-seq counts, this function will randomly select two groups of
@@ -26,18 +25,28 @@ library(parallel)
 #' @param gvec A logical of length \code{ncol(mat)}. A \code{TRUE} in position \eqn{i}
 #'     indicates inclusion into the smaller dataset. Hence, \code{sum(gvec)} should
 #'     equal \code{ngene}.
-#' @param shuffle_sample TRUE to shuffle sample per gene. Suppose samples are correlated
-#'  across genes, shuffling sample labels at each gene would reduce sample correlation.
-#' @param signal_dist What's the distribution of beta - the true effecrs? Options
-#' 	include \code{"big_normal"} and \code{"near_normal"}.
-#' @param signal_params Specify parameters for beta distribution. This is a list of
-#' 	arguments to pass to \code{signal_dist}.
+#' @param signal_fun A function that returns the signal. This should take as
+#'     input \code{n} for the number of samples to return and then return only
+#'     a vector of samples.
+#' @param signal_params A list of additional arguments to pass to \code{signal_fun}.
 #' @param skip_gene The number of maximally expressed genes to skip.
 #'     Not used if \code{gselect = "custom"}.
 #' @param prop_null The proportion of genes that are null.
 #' @param alpha If \eqn{b} is an effect and \eqn{s} is an empirical standard deviation, then
 #'     we model \eqn{b/s^\alpha} as being exchangeable.
-#' @param ncores Default 2 cores used in parallelized computing. Use mcapply in parallel package.
+#' @param group_assign How should we assign groups? Exactly half in one group
+#'     and exactly half in the other (or one less in the other if the number
+#'     of individuals is odd) (\code{"half"}), with a Bernoulli(0.5)
+#'     distribution (\code{"random"}), or correlated with latent factors
+#'     (\code{"cor"})? If \code{group_assign = "cor"}, then you have to specify
+#'     \code{corvec}.
+#' @param corvec A vector of correlations. \code{corvec[i]} is the correlation
+#'     of the latent group assignment vector with the ith latent confounder.
+#'     Only used if \code{group_assign = "cor"}. This vector is constrained
+#'     so that \code{crossprod(corvec) < 1}. The number of latent factors
+#'     is taken to be the length of corvec. Note that the correlations of the
+#'     latent factors with the observed group-assignment vector (instead of the
+#'     latent group-assignment vector) will be \code{corvec * sqrt(2 / pi)}.
 #'
 #' @return A list with the following elements:
 #' \itemize{
@@ -46,42 +55,62 @@ library(parallel)
 #'  \item{\code{X}: }{A design matrix. The first column contains a vector ones (for an
 #'        intercept term) and the second column contains an indicator for group membership.}
 #'  \item{\code{beta}: }{The approximately true effect sizes of \eqn{log(Y) ~ X\beta}.}
+#'  \item{\code{corassign}:}{The output from the call to \code{\link{corassign}}.
+#'        Only returned if \code{group_assign = "cor"}.}
 #' }
 #'
-#' @author David Gerard, Joyce Hsiao
+#' @author David Gerard
+#'
+#' @references Gerard, D., & Stephens, M. (2017).
+#'     Unifying and generalizing methods for removing unwanted variation based
+#'     on negative controls. arXiv preprint arXiv:1705.08393.
 #'
 #' @export
-poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
-                     shuffle_sample = F,
-                     gselect = c("max", "random", "rand_max", "custom", "mean_max"),
-                     gvec = NULL,
-                     skip_gene = 0,
-                     signal_fun = c("big_normal","near_normal"),
-                     signal_params = list(betapi=1, betamu=0, betasd=1),
-                     prop_null = 1,
-                     alpha = 0,
-                     ncores=2) {
+poisthin <- function(mat,
+                     nsamp         = nrow(mat),
+                     ngene         = ncol(mat),
+                     gselect       = c("max", "random", "rand_max",
+                                       "custom", "mean_max"),
+                     gvec          = NULL,
+                     skip_gene     = 0,
+                     signal_fun    = stats::rnorm,
+                     signal_params = list(mean = 0, sd = 1),
+                     prop_null     = 1,
+                     alpha         = 0,
+                     group_assign  = c("half", "random", "cor"),
+                     corvec        = NULL) {
+
   ## Check Input -------------------------------------------------------------
-#  assertthat::assert_that(is.matrix(mat))
+  assertthat::assert_that(is.matrix(mat))
   assertthat::assert_that(nsamp <= nrow(mat))
   assertthat::assert_that(ngene + skip_gene <= ncol(mat))
-#  assertthat::assert_that(is.function(signal_fun))
+  assertthat::assert_that(is.function(signal_fun))
   assertthat::assert_that(is.list(signal_params))
   assertthat::assert_that(prop_null >= 0, prop_null <= 1)
 
   gselect <- match.arg(gselect)
 
   if (gselect == "custom") {
-    assertthat::assert_that(is.logical(gvec))
-    assertthat::are_equal(length(gvec), ncol(mat))
-    assertthat::are_equal(sum(gvec), ngene)
+    stopifnot(is.logical(gvec))
+    stopifnot(length(gvec) == ncol(mat))
+    stopifnot(sum(gvec) == ngene)
   } else {
     if (!is.null(gvec)) {
       warning('gvec is specified but being ignored since gselect is not "custom"')
     }
   }
 
-  ## subset matrix -----------------------------------------------------------
+  group_assign <- match.arg(group_assign)
+  if (group_assign == "cor") {
+    stopifnot(!is.null(corvec))
+    stopifnot(is.numeric(corvec))
+    stopifnot(length(corvec) < min(nsamp, ngene))
+    stopifnot(crossprod(corvec) < 1)
+  } else {
+    stopifnot(is.null(corvec))
+  }
+
+  ## get gene indices ---------------------------------------------------------
   med_express <- apply(mat, 2, stats::median)
   mean_express <- colMeans(mat)
   order_vec <- order(med_express, mean_express, decreasing = TRUE)
@@ -108,46 +137,36 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
     gindices <- order_vec_means[(skip_gene + 1):(skip_gene + ngene)]
   }
 
-  samp_indices <- sample(1:nrow(mat), size = nsamp)
-
+  ## Get submat --------------------------------------------------------------
   gindices <- sort(gindices)
-  samp_indices <- sort(samp_indices)
-
+  samp_indices <- sort(sample(1:nrow(mat), size = nsamp))
   submat <- mat[samp_indices, gindices, drop = FALSE]
-  group_indicator <- rep(FALSE, length = nsamp)
-  group_indicator[sample(1:nsamp, size = floor(nsamp / 2))] <- TRUE
 
-  ## Shuffle sample labels per gene or not
-  if (shuffle_sample==TRUE) {
-    submat <- do.call(rbind, mclapply(1:nrow(submat), function(g) {
-      submat[g,sample(ncol(submat))]
-    }, mc.cores = ncores))
-  } else{
-    submat <- submat
+  ## Group assignment --------------------------------------------------------
+  if (group_assign == "half") {
+    group_indicator <- rep(FALSE, length = nsamp)
+    group_indicator[sample(1:nsamp, size = floor(nsamp / 2))] <- TRUE
+  } else if (group_assign == "random") {
+    group_indicator <- sample(x = c(TRUE, FALSE),
+                              size = nsamp,
+                              replace = TRUE)
+  } else if (group_assign == "cor") {
+    cout <- corassign(mat    = submat,
+                      nfac   = length(corvec),
+                      corvec = corvec,
+                      return = "full")
+    group_indicator <- cout$x == 1L
+  } else {
+    stop("poisthin: how did you get here?")
   }
 
   ## Draw signal -------------------------------------------------------------
-#  if (signal_fun=="big_normal") {
-#    signal_params <- list(betapi=1, betamu=0, betasd=1)
-#  } else {
-#    signal_params <- list(betapi=c(2/3,1/3), betamu=c(0,0),
-#                          betasd=c(1,2)/sqrt(2*nsamp-2))
-#  }
-
-  make_normalmix <- function(nsignal, beta_args) {
-    k <- length(beta_args$betapi) # number of components
-    comp <- sample(1:k, nsignal, beta_args$betapi,replace=TRUE) #randomly draw a component
-    beta <- rnorm(nsignal, beta_args$betamu[comp], beta_args$betasd[comp])
-    return(beta)
-  }
-
   nsignal <- round(ngene * (1 - prop_null))
   if (nsignal > 0) {
-    signal_params$nsignal <- nsignal
-#    signal_vec      <- do.call(what = signal_fun, args = signal_params) ## log2-fold change
-    signal_vec <- make_normalmix(nsignal, signal_params)
+    signal_params$n <- nsignal
+    signal_vec      <- do.call(what = signal_fun, args = signal_params) ## log2-fold change
 
-    assertthat::are_equal(length(signal_vec), nsignal)
+    stopifnot(length(signal_vec) == nsignal)
 
     which_signal <- sort(sample(1:ncol(submat), nsignal)) # location of signal
 
@@ -161,29 +180,21 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
     sign_vec  <- sign(signal_vec) # sign of signal
     bin_probs <- 2 ^ -abs(signal_vec) # binomial prob
 
+    ng1 <- sum(group_indicator)
+    ng2 <- sum(!group_indicator)
+
     submat[group_indicator, which_signal[sign_vec > 0]] <-
-      matrix(stats::rbinom(n = sum(sign_vec > 0) * nsamp / 2,
+      matrix(stats::rbinom(n    = sum(sign_vec > 0) * ng1,
                            size = c(submat[group_indicator, which_signal[sign_vec > 0]]),
-                           prob = rep(bin_probs[sign_vec > 0], each = nsamp / 2)),
-             nrow = nsamp / 2)
+                           prob = rep(bin_probs[sign_vec > 0], each = ng1)),
+             nrow = ng1)
 
     submat[!group_indicator, which_signal[sign_vec < 0]] <-
-      matrix(stats::rbinom(n = sum(sign_vec < 0) * nsamp / 2,
+      matrix(stats::rbinom(n    = sum(sign_vec < 0) * ng2,
                            size = c(submat[!group_indicator, which_signal[sign_vec < 0]]),
-                           prob = rep(bin_probs[sign_vec < 0], each = nsamp / 2)),
-             nrow = nsamp / 2)
+                           prob = rep(bin_probs[sign_vec < 0], each = ng2)),
+             nrow = ng2)
 
-    # for (gn in 1:length(signal_vec)) {
-    #   if (sign_vec[gn] == 1) {
-    #     current_count <- submat[group_indicator, which_signal[gn]]
-    #     submat[group_indicator, which_signal[gn]] <-
-    #       sapply(current_count, FUN = stats::rbinom, n = 1, prob = bin_probs[gn])
-    #   } else if (sign_vec[gn] == -1) {
-    #     current_count <- submat[!group_indicator, which_signal[gn]]
-    #     submat[!group_indicator, which_signal[gn]] <-
-    #       sapply(current_count, FUN = stats::rbinom, n = 1, prob = bin_probs[gn])
-    #   }
-    # }
     beta <- rep(0, ngene)
     beta[which_signal] <- -1 * signal_vec ## -1 because of way design matrix is created
   } else if (nsignal == 0 & abs(prop_null - 1) > 10 ^ -6) {
@@ -196,65 +207,238 @@ poisthin <- function(mat, nsamp = nrow(mat), ngene = ncol(mat),
   X <- stats::model.matrix(~group_indicator)
   return_list <- list(Y = submat, X = X, beta = beta)
 
+  if (group_assign == "cor") {
+    return_list$corassign <- cout
+  }
+
   return(return_list)
 }
 
 
+#' Group assignment that is correlated with latent factors.
+#'
+#' We extract latent factors from the log of \code{mat} using an SVD, then
+#' generate an underlying group-assignment variable from a conditional
+#' normal distribution (conditional on the latent factors). This underlying
+#' group-assignment variable is used to assign groups.
+#'
+#' If \code{nfac} is provided, then \code{corvec} must be the same length as \code{nfac}.
+#' If \code{nfac} is not provided, then it is assumed that the first \code{nfac}
+#' elements of \code{corvec} are the underlying correlations, if \code{nfac} turns out to be
+#' smaller than the length of \code{corvec}. If \code{nfac} turns
+#' out to be larger than the length of \code{corvec}, then the factors without
+#' defined correlations are assumed to have correlation 0.
+#'
+#' @param mat A matrix of count data. The rows index the individuals and
+#'     the columns index the genes.
+#' @param nfac The number of latent factors. If \code{NULL}, then we will
+#'     use \code{\link{EigenDiff}} to choose the number of latent
+#'     factors.
+#' @param corvec The vector of correlations. \code{corvec[i]} is the correlation
+#'     between latent factor \code{i} and the underlying group-assignment variable.
+#'     You can think of the correlations in \code{corvec} as a kind of "tetrachoric
+#'     correlation." If \code{NULL}, then it assumes independence between
+#'     factors and group assignment. Note that the correlations of the
+#'     latent factors with the observed group-assignment vector (instead of the
+#'     latent group-assignment vector) will be \code{corvec * sqrt(2 / pi)}.
+#' @param return What should we return? Just the group assignment
+#'     (\code{"group"}) or a list of a bunch of things (\code{"full"}).
+#'
+#' @return A list with some or all of the following elements:
+#'     \describe{
+#'       \item{\code{x}}{The vector of group assignments. \code{0L} indicates
+#'           membership to one group and \code{1L} indicates membership to
+#'           the other group.}
+#'       \item{\code{nfac}}{The number of assumed latent factors.}
+#'       \item{\code{facmat}}{A matrix, whose columns contain the latent factors.}
+#'       \item{\code{groupfac}}{The underlying group-assignment factor.}
+#'       \item{\code{corvec}}{The correlation vector. Note that this is the
+#'           correlation between random variables observed in \code{groupfac}
+#'           and \code{facmat}, }
+#'     }
+#'     If \code{return = "group"}, then the list only contains \code{x}.
+#'
+#'
+#' @author David Gerard
+#'
+#' @export
+corassign <- function(mat,
+                      nfac   = NULL,
+                      corvec = NULL,
+                      return = c("group", "full")) {
 
+  ## Check input --------------------------------------------------------------
+  return <- match.arg(return)
+  assertthat::assert_that(is.matrix(mat))
+  assertthat::assert_that(all(!is.na(mat)))
+  assertthat::assert_that(all(mat >= 0))
 
+  if (!is.null(nfac)) {
+    stopifnot(is.numeric(nfac))
+    stopifnot(length(nfac) == 1)
+    stopifnot(nfac >= 0)
+    stopifnot(nfac < min(nrow(mat), ncol(mat)))
+  }
 
-#log2_cpm <- function() {}
+  if (!is.null(corvec)) {
+    stopifnot(is.numeric(corvec))
+    stopifnot(crossprod(corvec) < 1)
+  }
 
+  n <- nrow(mat)
+  p <- ncol(mat)
 
+  ## Get residuals ------------------------------------------------------------
+  resmat <- stats::resid(stats::lm(log2(mat + 1) ~ 1))
 
-# older code ----------
+  ## Find number of latent factors if not provided ----------------------------
+  if (is.null(nfac)) {
+    nfac <- EigenDiff(resmat)
 
+    ## Pad or delete corvec where necessary.
+    if (is.null(corvec)) {
+      corvec <- rep_len(x = 0, length.out = nfac)
+    } else if (nfac < length(corvec)) {
+      corvec <- corvec[seq_len(nfac)]
+      message(paste0("Only using first ", nfac, " elements of corvec."))
+    } else if (nfac > length(corvec)) {
+      npad <- nfac - length(corvec)
+      corvec <- c(corvec, rep_len(0, npad))
+      message(paste0("Padding last ", npad, " (of ", nfac, " elements) of corvec with 0's."))
+    } else {
+      message(paste0("Using all ", length(corvec), " elements of corvec."))
+    }
+  } else {
+    if (is.null(corvec)) {
+      corvec <- rep_len(x = 0, length.out = nfac)
+    } else {
+      stopifnot(nfac == length(corvec))
+    }
+  }
 
-library(Matrix)
+  ## Generate group assignment depending on if nfac == 0 and corvec == 0
+  if (nfac == 0) {
+    aslist <- uncorassign(n, return = "full")
+    x <- aslist$x
+    w <- aslist$groupfac
+    if (return == "full") {
+      facmat <- matrix(nrow = n, ncol = 0)
+    }
+  } else if (all(corvec == 0)) {
+    aslist <- uncorassign(n, return = "full")
+    x <- aslist$x
+    w <- aslist$groupfac
+    if (return == "full") { ## tiny optimization
+      facmat <- irlba::irlba(A = resmat, nv = 0, nu = nfac)$u * sqrt(n)
+    }
+  } else {
+    ## Get factors and normalize ----------------------------------------------
+    facmat <- irlba::irlba(A = resmat, nv = 0, nu = nfac)$u * sqrt(n)
 
-sample_data <- function(counts, n, p=NULL) {
-    # each row is a gene
-    # each column is a sample
-    counts = as.matrix(counts)
-    nn = ncol(counts)
-    ngenes = nrow(counts)
-    n = min(nn, n)
+    ## Generate assignment factor ---------------------------------------------
+    w <- stats::rnorm(n    = n,
+                      mean = c(facmat %*% corvec),
+                      sd   = sqrt(1 - c(crossprod(corvec))))
 
-    if (!is.null(p)) {
-      pp = min(ngenes, p)
-      genes_idx = sample(1:ngenes, pp)
-      }
-    if (is.null(p)) {
-      pp = ngenes
-      genes_idx = 1:ngenes
-      }
+    ## Group assignment based on assignment factor and return -----------------
+    x <- ifelse(w > 0, 1L, 0L)
+  }
 
-    return(counts[genes_idx, sample(1:nn, n)])
+  ## Return -------------------------------------------------------------------
+  return_list   <- list()
+  return_list$x <- x
+  if (return == "full") {
+    return_list$nfac     <- nfac
+    return_list$facmat   <- facmat
+    return_list$groupfac <- w
+    return_list$corvec   <- corvec
+  }
+  return(return_list)
 }
 
-get_sample_correlated <- function(counts, args) {
-  # if (is.null(args$seed)) {args$seed <- 99}
-  # set.seed(args$seed)
-  df <- sample_data(counts, args$n1+args$n2, args$p)
-  group <- c(rep(1, args$n1), rep(2, args$n2))
-  df.perm <- do.call(rbind, lapply(1:nrow(df), function(g) {
-      df[g,sample(ncol(df))]
-  }))
-  x <- df.perm[,group==1]
-  y <- df.perm[,group==2]
-  return(list(x=x,
-              y=y))
+
+#' Group assignment independent of anything.
+#'
+#' @param n The sample size.
+#' @param return Should we just return a list with just the
+#'     vector of assignment (\code{"group"})
+#'     or a list with the vector of assignments and the vector of latent
+#'     variables (\code{"full"})?
+#'
+#' @return A list with some or all of the following elements.
+#'     \describe{
+#'       \item{\code{x}}{The group assignment. \code{1L} for one group and
+#'            \code{0L} for the other group.}
+#'       \item{\code{w}}{The latent assignment vector (only returned if
+#'            \code{return = "full"}). Negative corresponds to one group
+#'            and positive corresponds to the other group.}
+#'     }
+#'
+#' @author David Gerard
+uncorassign <- function(n,
+                        return = c("group", "full")) {
+  assertthat::assert_that(n > 0)
+  return <- match.arg(return)
+  ret_vec   <- list()
+  if (return == "group") {
+    ret_vec$x <- sample(x       = c(0L, 1L),
+                        size    = n,
+                        replace = TRUE)
+  } else if (return == "full") {
+    ret_vec$groupfac <- stats::rnorm(n = n)
+    ret_vec$x <- ifelse(ret_vec$groupfac > 0, 1L, 0L)
+  }
+  return(ret_vec)
 }
 
-get_sample_uncorrelated <- function(counts, args) {
-  # if (is.null(args$seed)) {args$seed <- 99}
-  # set.seed(args$seed)
-  df <- sample_data(counts, args$n1+args$n2, args$p)
-  group <- c(rep(1, args$n1), rep(2, args$n2))
-  x <- df[,group==1]
-  y <- df[,group==2]
-  return(list(x=x,
-              y=y))
-}
 
+#' Copied code from `cate::EigenDiff` with minor changes.
+#'
+#' I fix an error where default `rmax` can sometimes be greater than dimension
+#' of `Y`. I also increase the performance by only calculating the
+#' singular values (not the singular vectors).
+#'
+#' The method estimates the number of factors by the Eigenvalue Difference
+#' Method of Onatski (2010).
+#'
+#' @param Y A matrix to estimate the rank.
+#' @param rmax The maximum rank.
+#' @param niter The maximum number of iterations.
+#'
+#' @references Jingshu Wang and Qingyuan Zhao (2015). cate: High Dimensional
+#'     Factor Analysis and Confounder Adjusted Testing and Estimation.
+#'     R package version 1.0.4. https://CRAN.R-project.org/package=cate
+#'
+#'     A. Onatski (2010), Determining the number of factors from empirical
+#'     distribution of eigenvalues. The Review of Economics and Statistics 92(4).
+#'
+#' @author David Gerard
+EigenDiff <- function (Y,
+                       rmax = min(3 * sqrt(nrow(Y)), nrow(Y), ncol(Y)),
+                       niter = 10)
+{
+  n <- nrow(Y)
+  p <- ncol(Y)
+  ev <- svd(Y, nu = 0, nv = 0)$d^2/n
+  n <- length(ev)
+  j <- rmax + 1
+  diffs <- ev - c(ev[-1], 0)
+  for (i in 1:niter) {
+    y <- ev[j:(j + 4)]
+    x <- ((j - 1):(j + 3))^(2/3)
+    lm.coef <- stats::lm(y ~ x)
+    delta <- 2 * abs(lm.coef$coef[2])
+    idx <- which(diffs[1:rmax] > delta)
+    if (length(idx) == 0) {
+      hatr <- 0
+    } else {
+      hatr <- max(idx)
+    }
+    newj = hatr + 1
+    if (newj == j)
+      break
+    j = newj
+  }
+  return(hatr)
+}
 
