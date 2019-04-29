@@ -77,7 +77,7 @@ saveRDS(res_merge, file = "output/eval_initial_type1.Rmd/res_merge.rds")
 ## Analysis
 
 
-```{r, fig.width=12}
+```{r}
 res_merge <- readRDS(file = "output/eval_initial_type1.Rmd/res_merge.rds")
 
 make_plots <- function(res, alpha, labels,
