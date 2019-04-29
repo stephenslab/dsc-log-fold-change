@@ -77,7 +77,7 @@ saveRDS(res_merge, file = "output/eval_initial_power.Rmd/res_merge_power.rds")
 
 ## False discovery rate control
 
-```{r plot_fdr}
+```{r plot_fdr, fig.width=12}
 res_merge <- readRDS(file = "output/eval_initial_power.Rmd/res_merge_power.rds")
 
 make_plots <- function(res, args=list(n1, labels), title) {
