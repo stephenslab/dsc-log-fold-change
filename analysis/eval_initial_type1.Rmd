@@ -136,19 +136,26 @@ make_plots_log2 <- function(res, alpha, labels,
                        args=list(n1, labels)) {
   n_methods <- length(unique(res$method))
   cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
-  res %>% filter(n1==args$n1) %>% 
+  res_plot <- res %>% filter(n1==args$n1) %>% 
     group_by(method, seed) %>%
-    summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval))) %>%
-#    group_by(method) %>%
+    summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval))) 
+  
+  res_plot_mn <- res_plot %>% group_by(method) %>%
+    summarise(mn=mean(type1, na.rm=T),
+              med=median(type1, na.rm=T))
     # summarise(mn=mean(type1, na.rm=T), 
     #           n=sum(!is.na(type1)), se=sd(type1, na.rm=T)/sqrt(n)) %>%
-    ggplot(., aes(x=method, y=log2(type1), col=method)) +
+    ggplot(data=res_plot, aes(x=method, y=log2(type1), col=method)) +
         # geom_errorbar(aes(ymin=mn+se, ymax=mn-se), width=.3) + 
         geom_boxplot() + geom_point(size=.7) + xlab("") +
       scale_x_discrete(position = "top",
                        labels=args$labels) +
       scale_color_manual(values=cols) +
-      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
+        geom_point(data=res_plot_mn,
+                   aes(x=method, y=log2(mn)), shape=4, size=4, col="black") +
+        geom_point(data=res_plot_mn,
+                   aes(x=method, y=log2(med)), shape=18, size=6, col="black")
 }
 
 library(cowplot)
@@ -159,30 +166,14 @@ p1 <- make_plots_log2(res_merge, alpha=.001,
                  args=list(n1=50, labels=labels)) + 
                 ggtitle("Type I error at alpha < .001, 50/group") + #ylim(0,.03) +
                 geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
-                ylab("log2 type I error") +
-                stat_summary(fun.y=median, geom="point", shape=18, size=6, col="black") +
-                stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
+                ylab("log2 type I error") 
 p1
-
-# 
-# p1 <- make_plots(res_merge, alpha=.001,
-#                  args=list(n1=50, labels=labels)) + 
-#                 ggtitle("Type error at alpha < .001, 50/group") + ylim(0,.025) +
-#                 geom_hline(yintercept=.001, col="gray30", lty=3) +
-#                 
-# p1
-
-# a <- res_merge[res_merge$n1==50 & res_merge$method=="wilcoxon",] %>%
-#   group_by(seed) %>%
-#   summarise(type1=mean(pval<.001, na.rm=T), nvalid=sum(!is.na(pval)))
 
 p2 <- make_plots_log2(res_merge, alpha=.001,
                  args=list(n1=250, labels=labels)) + 
                 ggtitle("Type error at alpha < .001, 250/group") + 
                 geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
-                ylab("log2 type I error") +
-                stat_summary(fun.y=median, geom="point", shape=18, size=6, col="black") +
-                stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
+                ylab("log2 type I error") 
 p2
 ```
 
