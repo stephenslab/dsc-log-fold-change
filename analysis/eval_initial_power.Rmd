@@ -90,13 +90,16 @@ make_plots <- function(res, args=list(n1, labels), title) {
         filter(n1 == args$n1) %>%
         summarise(power = sum(qval < fdr_thres & truth_vec==TRUE, na.rm=T)/sum(truth_vec==TRUE)) %>%
         ggplot(., aes(x=method, y=power, col=method)) + 
-              geom_boxplot() + geom_point() +   
+              geom_boxplot() + geom_point(cex=.7) +   
               xlab("") + ylab("Power") +
             scale_x_discrete(position = "top",
                              labels=args$labels) +
             scale_color_manual(values=cols) +
         ggtitle(paste("Power at q-value < ", fdr_thres, "(total 1K)")) +
-        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
+        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black") +
+        stat_summary(fun.y=median, geom="point", shape=18, size=4, col="black")
+  
 
   p2 <- res %>% group_by(method, seed) %>%
         filter(n1 == args$n1) %>%
@@ -110,7 +113,9 @@ make_plots <- function(res, args=list(n1, labels), title) {
             scale_color_manual(values=cols) +
             geom_hline(yintercept=.1, col="gray40", lty=3) + 
         ggtitle(paste("FDR at q-value < ", fdr_thres, "(total 1K)")) + 
-        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
+        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black") +
+        stat_summary(fun.y=median, geom="point", shape=18, size=4, col="black")
 
   print(plot_grid(title, plot_grid(p1,p2), ncol=1, rel_heights = c(.1,1)))
 }
@@ -146,7 +151,9 @@ make_plots_auc <- function(res, args=list(n1, labels), title) {
                            labels=args$labels) +
           scale_color_manual(values=cols) +
       ggtitle("AUC") + 
-      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
+      stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black") +
+      stat_summary(fun.y=median, geom="point", shape=18, size=4, col="black")
 }
 
 levels(factor(res_merge_auc$method))
