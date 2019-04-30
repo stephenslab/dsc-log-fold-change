@@ -269,7 +269,7 @@ div.section {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2019-04-29
+<strong>Last updated:</strong> 2019-04-30
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -348,10 +348,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree7cf6acead8c8461c8e2050ab0ff836b5859d80c6targetblank7cf6acea"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/7cf6acead8c8461c8e2050ab0ff836b5859d80c6" target="_blank">7cf6ace</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree36f9e9c9b0149ba4b43cfbe0598fb75be6cf74eetargetblank36f9e9ca"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/36f9e9c9b0149ba4b43cfbe0598fb75be6cf74ee" target="_blank">36f9e9c</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree7cf6acead8c8461c8e2050ab0ff836b5859d80c6targetblank7cf6acea" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree36f9e9c9b0149ba4b43cfbe0598fb75be6cf74eetargetblank36f9e9ca" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -372,6 +372,7 @@ Untracked files:
     Untracked:  analysis/gtex_type1.Rmd
 
 Unstaged changes:
+    Modified:   analysis/eval_initial_power.Rmd
     Modified:   analysis/index.Rmd
     Modified:   dsc/benchmark.dsc
     Modified:   dsc/benchmark.sh
@@ -413,6 +414,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/36f9e9c9b0149ba4b43cfbe0598fb75be6cf74ee/analysis/eval_initial_type1.Rmd" target="_blank">36f9e9c</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-30
+</td>
+<td>
+log mean instead of mean log
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/7a4910933c11c41f5f9b5b7f3d9ccdb5eb2c0390/docs/eval_initial_type1.html" target="_blank">7a49109</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -604,7 +639,7 @@ library(tidyverse)</code></pre>
 ✖ dplyr::filter() masks stats::filter()
 ✖ dplyr::lag()    masks stats::lag()</code></pre>
 <p>extract dsc output and get p-values, q-values, true signals, etc.</p>
-<pre class="r"><code>dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_type1&quot;
+<pre class="r"><code>dir_dsc &lt;- &quot;/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_gtex&quot;
 
 dsc_res &lt;- dscquery(dir_dsc, 
                     targets=c(&quot;data_poisthin_null&quot;,
@@ -894,6 +929,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/7a4910933c11c41f5f9b5b7f3d9ccdb5eb2c0390/docs/figure/eval_initial_type1.Rmd/unnamed-chunk-4-1.png" target="_blank">7a49109</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/ec7a7c6cf85a7ef994b11bd29ec6b70ae19baf88/docs/figure/eval_initial_type1.Rmd/unnamed-chunk-4-1.png" target="_blank">ec7a7c6</a>
 </td>
 <td>
@@ -947,6 +993,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/7a4910933c11c41f5f9b5b7f3d9ccdb5eb2c0390/docs/figure/eval_initial_type1.Rmd/unnamed-chunk-4-2.png" target="_blank">7a49109</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/ec7a7c6cf85a7ef994b11bd29ec6b70ae19baf88/docs/figure/eval_initial_type1.Rmd/unnamed-chunk-4-2.png" target="_blank">ec7a7c6</a>
