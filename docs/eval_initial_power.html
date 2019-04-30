@@ -272,7 +272,7 @@ div.section {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2019-04-29
+<strong>Last updated:</strong> 2019-04-30
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -351,10 +351,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreec37d159f5840538924578045793c2c88b7b72543targetblankc37d159a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/c37d159f5840538924578045793c2c88b7b72543" target="_blank">c37d159</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree538aa1aeef379e3f9b3a1f477976866d3d418830targetblank538aa1aa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/538aa1aeef379e3f9b3a1f477976866d3d418830" target="_blank">538aa1a</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreec37d159f5840538924578045793c2c88b7b72543targetblankc37d159a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree538aa1aeef379e3f9b3a1f477976866d3d418830targetblank538aa1aa" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -372,9 +372,11 @@ Ignored files:
 
 Untracked files:
     Untracked:  analysis/eval_initial_type1_libsize.Rmd
-    Untracked:  dsc/Rplots.pdf
+    Untracked:  analysis/gtex_power.Rmd
+    Untracked:  analysis/gtex_type1.Rmd
 
 Unstaged changes:
+    Modified:   analysis/index.Rmd
     Modified:   dsc/benchmark.dsc
     Modified:   dsc/benchmark.sh
 
@@ -415,6 +417,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/538aa1aeef379e3f9b3a1f477976866d3d418830/analysis/eval_initial_power.Rmd" target="_blank">538aa1a</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-30
+</td>
+<td>
+overlay mean and median
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/f2ded41c55d0d6410c92394ca8ef9887b31066e6/docs/eval_initial_power.html" target="_blank">f2ded41</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -494,12 +530,12 @@ initial power results
 
 library(dscrutils)
 library(tidyverse)</code></pre>
-<pre><code>── Attaching packages ───────────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
+<pre><code>── Attaching packages ─────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
 <pre><code>✔ ggplot2 3.1.0       ✔ purrr   0.3.2  
 ✔ tibble  2.1.1       ✔ dplyr   0.8.0.1
 ✔ tidyr   0.8.3       ✔ stringr 1.3.1  
 ✔ readr   1.3.1       ✔ forcats 0.3.0  </code></pre>
-<pre><code>── Conflicts ──────────────────────────────────────────────────────────────── tidyverse_conflicts() ──
+<pre><code>── Conflicts ────────────────────────────────────────────────────────── tidyverse_conflicts() ──
 ✖ dplyr::filter() masks stats::filter()
 ✖ dplyr::lag()    masks stats::lag()</code></pre>
 <p>extract dsc output and get p-values, q-values, true signals, etc.</p>
@@ -554,13 +590,16 @@ make_plots &lt;- function(res, args=list(n1, labels), title) {
         filter(n1 == args$n1) %&gt;%
         summarise(power = sum(qval &lt; fdr_thres &amp; truth_vec==TRUE, na.rm=T)/sum(truth_vec==TRUE)) %&gt;%
         ggplot(., aes(x=method, y=power, col=method)) + 
-              geom_boxplot() + geom_point() +   
+              geom_boxplot() + geom_point(cex=.7) +   
               xlab(&quot;&quot;) + ylab(&quot;Power&quot;) +
             scale_x_discrete(position = &quot;top&quot;,
                              labels=args$labels) +
             scale_color_manual(values=cols) +
         ggtitle(paste(&quot;Power at q-value &lt; &quot;, fdr_thres, &quot;(total 1K)&quot;)) +
-        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
+        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;) +
+        stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=4, col=&quot;black&quot;)
+  
 
   p2 &lt;- res %&gt;% group_by(method, seed) %&gt;%
         filter(n1 == args$n1) %&gt;%
@@ -574,7 +613,9 @@ make_plots &lt;- function(res, args=list(n1, labels), title) {
             scale_color_manual(values=cols) +
             geom_hline(yintercept=.1, col=&quot;gray40&quot;, lty=3) + 
         ggtitle(paste(&quot;FDR at q-value &lt; &quot;, fdr_thres, &quot;(total 1K)&quot;)) + 
-        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
+        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;) +
+        stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=4, col=&quot;black&quot;)
 
   print(plot_grid(title, plot_grid(p1,p2), ncol=1, rel_heights = c(.1,1)))
 }
@@ -609,6 +650,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f2ded41c55d0d6410c92394ca8ef9887b31066e6/docs/figure/eval_initial_power.Rmd/plot_fdr-1.png" target="_blank">f2ded41</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f06374b32157b7dcf17ef3889c355f043ffb8ad0/docs/figure/eval_initial_power.Rmd/plot_fdr-1.png" target="_blank">f06374b</a>
@@ -651,6 +703,17 @@ Date
 <tbody>
 <tr>
 <td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f2ded41c55d0d6410c92394ca8ef9887b31066e6/docs/figure/eval_initial_power.Rmd/plot_fdr-2.png" target="_blank">f2ded41</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+</tr>
+<tr>
+<td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f06374b32157b7dcf17ef3889c355f043ffb8ad0/docs/figure/eval_initial_power.Rmd/plot_fdr-2.png" target="_blank">f06374b</a>
 </td>
 <td>
@@ -684,7 +747,9 @@ make_plots_auc &lt;- function(res, args=list(n1, labels), title) {
                            labels=args$labels) +
           scale_color_manual(values=cols) +
       ggtitle(&quot;AUC&quot;) + 
-      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1))
+      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
+      stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;) +
+      stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=4, col=&quot;black&quot;)
 }
 
 levels(factor(res_merge_auc$method))</code></pre>
