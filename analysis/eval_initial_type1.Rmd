@@ -37,7 +37,7 @@ library(tidyverse)
 extract dsc output and get p-values, q-values, true signals, etc.
 
 ```{r, warning=F, message=F, eval=F}
-dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_type1"
+dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_gtex"
 
 dsc_res <- dscquery(dir_dsc, 
                     targets=c("data_poisthin_null",
