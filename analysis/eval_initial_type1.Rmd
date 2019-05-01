@@ -177,3 +177,25 @@ p2 <- make_plots_log2(res_merge, alpha=.001,
 p2
 ```
 
+
+histogram of unadjusted p-value of one dataset
+
+```{r}
+tmp <- subset(res_merge, n1==50) %>%
+  group_by(seed, method) %>%
+  summarise(type1=mean(pval < .001, na.rm=T)) 
+tmp[which.max(tmp$type1),]
+tmp[tmp$seed==90,]
+
+subset(res_merge, n1==50 & seed==90) %>%
+  ggplot(., aes(x=pval)) +
+  geom_histogram(bins=30) +
+  facet_wrap(~method)
+
+subset(res_merge, n1==50 & seed==90) %>%
+  ggplot(., aes(x=pval)) +
+  geom_histogram(bins=30) +
+  facet_wrap(~method) + xlim(0, .1)
+```
+
+
