@@ -8,7 +8,6 @@ edger <- function(Y, X) {
   #  x <- rep(c(1,2), times = c(n1, n2))
   #  x <- factor(x)
 
-
   if (sum(duplicated(colnames(Y))) > 0) {
     colnames(Y) <- paste0("cell.", c(1:ncol(Y))) }
   if (is.null(rownames(Y))) {
