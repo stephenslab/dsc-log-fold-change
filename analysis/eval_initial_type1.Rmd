@@ -37,7 +37,7 @@ library(tidyverse)
 extract dsc output and get p-values, q-values, true signals, etc.
 
 ```{r, warning=F, message=F, eval=F}
-dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_gtex"
+dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_type1"
 
 dsc_res <- dscquery(dir_dsc, 
                     targets=c("data_poisthin_null",
@@ -68,6 +68,8 @@ for (i in 1:nrow(dsc_res)) {
                          stringsAsFactors = F)
 }
 res_merge <- do.call(rbind, res)
+res_merge$method <- factor(res_merge$method)
+res_merge$n1 <- factor(res_merge$n1)
 
 saveRDS(res_merge, file = "output/eval_initial_type1.Rmd/res_merge.rds")
 ```
@@ -103,29 +105,19 @@ make_plots <- function(res, alpha, labels,
 library(cowplot)
 levels(factor(res_merge$method))
 
-p1 <- make_plots(res_merge, alpha=.001,
-                 args=list(n1=50, labels=labels)) + 
-                ggtitle("Type error at alpha < .001, 50/group") + ylim(0,.025) +
-                geom_hline(yintercept=.001, col="gray30", lty=3) +
-                stat_summary(fun.y=median, geom="point", shape=18, size=6, col="black") +
-                stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
-p1
+make_plots(res_merge, alpha=.001,
+           args=list(n1=50, labels=labels)) + 
+          ggtitle("Type error at alpha < .001, 50/group") + ylim(0,.025) +
+          geom_hline(yintercept=.001, col="gray30", lty=3) +
+          stat_summary(fun.y=median, geom="point", shape=18, size=6, col="black") +
+          stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 
-# # excluded edger
-# labels <- c("deseq2", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
-# p1 <- make_plots(subset(res_merge, method!="edger"), alpha=.001,
-#                  args=list(n1=50, labels=labels)) + 
-#                 ggtitle("Type error at alpha < .001, 50/group") + ylim(0,.02) +
-#                 geom_hline(yintercept=.001, col="gray30", lty=3) 
-# p1
-
-p2 <- make_plots(res_merge, alpha=.001,
-                 args=list(n1=250, labels=labels)) + 
-                ggtitle("Type error at alpha < .001, 250/group") + ylim(0,.03) +
-                geom_hline(yintercept=.001, col="gray30", lty=3) +
-                stat_summary(fun.y=median, geom="point", shape=18, size=6, col="black") +
-                stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
-p2
+make_plots(res_merge, alpha=.001,
+             args=list(n1=250, labels=labels)) + 
+            ggtitle("Type error at alpha < .001, 250/group") + ylim(0,.03) +
+            geom_hline(yintercept=.001, col="gray30", lty=3) +
+            stat_summary(fun.y=median, geom="point", shape=18, size=6, col="black") +
+            stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 ```
 
 
@@ -162,19 +154,57 @@ library(cowplot)
 levels(factor(res_merge$method))
 labels <- c("deseq2", "edger", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
 
-p1 <- make_plots_log2(res_merge, alpha=.001,
+make_plots_log2(res_merge, alpha=.001,
                  args=list(n1=50, labels=labels)) + 
                 ggtitle("Type I error at alpha < .001, 50/group") + #ylim(0,.03) +
                 geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
                 ylab("log2 type I error") 
-p1
 
-p2 <- make_plots_log2(res_merge, alpha=.001,
+make_plots_log2(res_merge, alpha=.001,
                  args=list(n1=250, labels=labels)) + 
                 ggtitle("Type error at alpha < .001, 250/group") + 
                 geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
                 ylab("log2 type I error") 
-p2
+```
+
+
+log2 scale by sample size by method
+
+```{r}
+make_plots_log2_v2 <- function(res, alpha) {
+  n_methods <- length(unique(res$method))
+  cols <- RColorBrewer::brewer.pal(n_methods,name="Dark2")
+  res_plot <- res %>% #filter(n1==args$n1) %>% 
+    group_by(n1, method, seed) %>%
+    summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval))) 
+  res_plot$n1 <- factor(res_plot$n1)
+  
+  res_plot_mn <- res_plot %>% group_by(n1, method) %>%
+    summarise(mn=mean(type1, na.rm=T),
+              med=median(type1, na.rm=T))
+  
+  ggplot(data=res_plot, aes(x=n1, y=log2(type1), col=method)) +
+    geom_point(size=.7) + 
+    facet_wrap(~method) + 
+    geom_point(data=res_plot_mn,
+         aes(x=n1, y=log2(mn)), shape=4, size=3, col="black") +
+    geom_point(data=res_plot_mn,
+         aes(x=n1, y=log2(med)), shape=18, size=3, col="black") + #+ xlab("") +
+    scale_color_manual(values=cols) +
+    geom_hline(yintercept=log2(.001), col="gray30", lty=3)  +
+    ylab("log2 Type I error") + xlab("sample size/group")
+}
+
+make_plots_log2_v2(res_merge, alpha=.001) + 
+                ggtitle("Type I error at alpha < .001") + ylim(-12,-3)
+
+
+res_merge %>% #filter(n1==args$n1) %>% 
+  group_by(n1, method, seed) %>%
+  summarise(type1=mean(pval<.001, na.rm=T), nvalid=sum(!is.na(pval)))  %>%
+  group_by(method, n1) %>%
+  summarise(mn=mean(type1, na.rm=T),
+            med=median(type1, na.rm=T))
 ```
 
 
@@ -187,15 +217,14 @@ tmp <- subset(res_merge, n1==50) %>%
 tmp[which.max(tmp$type1),]
 tmp[tmp$seed==90,]
 
-subset(res_merge, n1==50 & seed==90) %>%
-  ggplot(., aes(x=pval)) +
-  geom_histogram(bins=30) +
-  facet_wrap(~method)
+subset(res_merge, n1==50 & seed==90) %>% #filter(n1==args$n1) %>% 
+  group_by(method) %>%
+  summarise(type1=mean(pval<.001, na.rm=T), nvalid=sum(!is.na(pval)))  
 
 subset(res_merge, n1==50 & seed==90) %>%
   ggplot(., aes(x=pval)) +
   geom_histogram(bins=30) +
-  facet_wrap(~method) + xlim(0, .1)
+  facet_wrap(~method)
 ```
 
 
