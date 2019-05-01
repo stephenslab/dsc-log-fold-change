@@ -258,7 +258,7 @@ div.section {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2019-04-29
+<strong>Last updated:</strong> 2019-05-01
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -289,10 +289,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree547073073b986f61506b79e486377c9b05994bbbtargetblank5470730a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/547073073b986f61506b79e486377c9b05994bbb" target="_blank">5470730</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreecc902af6abd19f3132a42f423035a3d48ebd7385targetblankcc902afa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/cc902af6abd19f3132a42f423035a3d48ebd7385" target="_blank">cc902af</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree547073073b986f61506b79e486377c9b05994bbbtargetblank5470730a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreecc902af6abd19f3132a42f423035a3d48ebd7385targetblankcc902afa" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -310,7 +310,8 @@ Ignored files:
 
 Untracked files:
     Untracked:  analysis/eval_initial_type1_libsize.Rmd
-    Untracked:  dsc/Rplots.pdf
+    Untracked:  analysis/gtex_power.Rmd
+    Untracked:  analysis/gtex_type1.Rmd
 
 Unstaged changes:
     Modified:   dsc/benchmark.dsc
@@ -353,6 +354,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/cc902af6abd19f3132a42f423035a3d48ebd7385/analysis/index.Rmd" target="_blank">cc902af</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-01
+</td>
+<td>
+update homepage
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/b9e5e5bdaf93e3fb9d06ac1333ba61460e9828d7/docs/index.html" target="_blank">b9e5e5b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-29
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -587,16 +622,28 @@ Start workflowr project.
 <ul>
 <li>Objectives:
 <ul>
-<li>Performances undering large sample size (e.g., 50, 250)</li>
+<li>Performances undering large sample size (e.g., 50/group, 250/group)</li>
 <li>Focusing on generic methods: not yet tailored methods for single-cell data</li>
 </ul></li>
 <li>Effect size, power and sample size <a href="eval_initial.html">RESULTS</a></li>
 <li>Power and false discovery rate: betasd=1, 1K genes drawn randomly, 10% true effects <a href="eval_initial_power.html">RESULTS</a></li>
 <li>Type I error: betasd=1, 1K genes drawn randomly <a href="eval_initial_type1.html">RESULTS</a></li>
 </ul></li>
-<li>Data curation procedure described <a href="../dsc/data/README.md">here</a>.
+<li>Evaluation using GTEx lung data
 <ul>
-<li>10x Genomics PBMC dataset.</li>
+<li>Objective:
+<ul>
+<li>Do bulk methods perform as expected in bulk data?</li>
+<li>Performance under small to large sample size (e.g., 5, 10, 50, 250)</li>
+</ul></li>
+<li>Type I error: betasd=1, 1K genes drawn randomly <a href="gtex_type1.html">RESULTS</a><br />
+</li>
+<li>Power and false discovery rate: betasd=1, 1K genes drawn randomly, 10% true effects <a href="gtex_power.html">RESULTS</a></li>
+</ul></li>
+<li><a href="../dsc/data/README.md">Data curation procedure</a>.
+<ul>
+<li>10x Genomics PBMC dataset</li>
+<li>GTEx lung samples</li>
 </ul></li>
 </ul>
 <hr />
