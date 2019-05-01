@@ -272,7 +272,7 @@ div.section {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2019-04-30
+<strong>Last updated:</strong> 2019-05-01
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -351,10 +351,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree538aa1aeef379e3f9b3a1f477976866d3d418830targetblank538aa1aa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/538aa1aeef379e3f9b3a1f477976866d3d418830" target="_blank">538aa1a</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree5279b0436758ab725b090cc0844adfa9dc3b6ad8targetblank5279b04a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/5279b0436758ab725b090cc0844adfa9dc3b6ad8" target="_blank">5279b04</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree538aa1aeef379e3f9b3a1f477976866d3d418830targetblank538aa1aa" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree5279b0436758ab725b090cc0844adfa9dc3b6ad8targetblank5279b04a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -417,6 +417,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/5279b0436758ab725b090cc0844adfa9dc3b6ad8/analysis/eval_initial_power.Rmd" target="_blank">5279b04</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-01
+</td>
+<td>
+visualize results by sample size then by method
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/0b474684ce2b046f5b85baec9da6b1b6dfcdb608/docs/eval_initial_power.html" target="_blank">0b47468</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-30
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -580,53 +614,59 @@ saveRDS(res_merge, file = &quot;output/eval_initial_power.Rmd/res_merge_power.rd
 <h2>False discovery rate control</h2>
 <pre class="r"><code>res_merge &lt;- readRDS(file = &quot;output/eval_initial_power.Rmd/res_merge_power.rds&quot;)
 
-make_plots &lt;- function(res, args=list(n1, labels), title) {
+plot_power &lt;- function(res) {
   fdr_thres &lt;- .1
   n_methods &lt;- length(unique(res$method))
   cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
-  library(cowplot)
-  title &lt;- ggdraw() + draw_label(title, fontface=&#39;bold&#39;)
-  p1 &lt;- res %&gt;% group_by(method, seed) %&gt;%
-        filter(n1 == args$n1) %&gt;%
-        summarise(power = sum(qval &lt; fdr_thres &amp; truth_vec==TRUE, na.rm=T)/sum(truth_vec==TRUE)) %&gt;%
-        ggplot(., aes(x=method, y=power, col=method)) + 
-              geom_boxplot() + geom_point(cex=.7) +   
-              xlab(&quot;&quot;) + ylab(&quot;Power&quot;) +
-            scale_x_discrete(position = &quot;top&quot;,
-                             labels=args$labels) +
-            scale_color_manual(values=cols) +
-        ggtitle(paste(&quot;Power at q-value &lt; &quot;, fdr_thres, &quot;(total 1K)&quot;)) +
-        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
-        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;) +
-        stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=4, col=&quot;black&quot;)
+  # library(cowplot)
+  # title &lt;- ggdraw() + draw_label(title, fontface=&#39;bold&#39;)
+  res_plot &lt;- res %&gt;% group_by(n1, method, seed) %&gt;%
+    summarise(power = sum(qval &lt; fdr_thres &amp; truth_vec==TRUE, 
+                          na.rm=T)/sum(truth_vec==TRUE)) 
+  res_plot$n1 &lt;- factor(res_plot$n1)
+  res_plot$method &lt;- factor(res_plot$method)
   
-
-  p2 &lt;- res %&gt;% group_by(method, seed) %&gt;%
-        filter(n1 == args$n1) %&gt;%
-        summarise(false_pos_rate = sum(qval &lt; fdr_thres &amp; truth_vec==F, na.rm=T)/sum(qval &lt; fdr_thres,
-                                                                                     na.rm=T)) %&gt;%
-        ggplot(., aes(x=method, y=false_pos_rate, col=method)) +
-            geom_boxplot() + geom_point() +  
-            xlab(&quot;&quot;) + ylab(&quot;False discovery rate&quot;) +
-            scale_x_discrete(position = &quot;top&quot;,
-                             labels=args$labels) +
-            scale_color_manual(values=cols) +
-            geom_hline(yintercept=.1, col=&quot;gray40&quot;, lty=3) + 
-        ggtitle(paste(&quot;FDR at q-value &lt; &quot;, fdr_thres, &quot;(total 1K)&quot;)) + 
-        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
-        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;) +
-        stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=4, col=&quot;black&quot;)
-
-  print(plot_grid(title, plot_grid(p1,p2), ncol=1, rel_heights = c(.1,1)))
+  ggplot(res_plot, aes(x=n1, y=power, col=method)) +
+        #geom_point(aes(col=method),cex=.7) + geom_boxplot(aes(col=method)) + 
+        geom_point(cex=.7) + geom_boxplot() + 
+        facet_wrap(~method) +
+        xlab(&quot;Sample size per group&quot;) + ylab(&quot;Power&quot;) +
+        scale_color_manual(values=cols) +
+        ggtitle(paste(&quot;Power at q-value &lt; &quot;, fdr_thres, &quot;(total 1K)&quot;)) +
+        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=2, col=&quot;black&quot;) +
+        stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=2, col=&quot;black&quot;)
 }
+
+plot_fdr &lt;- function(res) {
+  fdr_thres &lt;- .1
+  n_methods &lt;- length(unique(res$method))
+  cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+  # library(cowplot)
+  # title &lt;- ggdraw() + draw_label(title, fontface=&#39;bold&#39;)
+  res_plot &lt;- res %&gt;% group_by(n1, method, seed) %&gt;%
+        summarise(false_pos_rate = sum(qval &lt; fdr_thres &amp; truth_vec==F, 
+                                       na.rm=T)/sum(qval &lt; fdr_thres,na.rm=T)) 
+  res_plot$n1 &lt;- factor(res_plot$n1)
+  res_plot$method &lt;- factor(res_plot$method)
+
+  ggplot(res_plot, aes(x=n1, y=false_pos_rate, col=method)) +
+      geom_point(cex=.7) + geom_boxplot() + 
+      facet_wrap(~method) +
+      xlab(&quot;Sample size per group&quot;) + ylab(&quot;Power&quot;) +
+      scale_color_manual(values=cols) +
+      ggtitle(paste(&quot;FDR at q-value &lt; &quot;, fdr_thres, &quot;(total 1K)&quot;)) +
+      stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=2, col=&quot;black&quot;) +
+      stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=2, col=&quot;black&quot;)
+}
+
+
 
 levels(factor(res_merge$method))</code></pre>
 <pre><code>[1] &quot;deseq2&quot;               &quot;edger&quot;                &quot;limma_voom&quot;          
 [4] &quot;t_test&quot;               &quot;t_test_log2cpm_quant&quot; &quot;wilcoxon&quot;            </code></pre>
 <pre class="r"><code>labels &lt;- c(&quot;deseq2&quot;, &quot;edger&quot;, &quot;limma_v&quot;, &quot;t_test&quot;, &quot;t_log2cpm_q&quot;, &quot;wilcoxon&quot;)
 
-make_plots(res_merge, args=list(n1=50, labels=labels), 
-       title=&quot;pi0=.9, 1K genes, beta /sim N(0,1), 50/group&quot;)</code></pre>
+plot_power(res_merge)</code></pre>
 <p><img src="figure/eval_initial_power.Rmd/plot_fdr-1.png" width="1152" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-plot_fdr-1">
@@ -650,6 +690,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/0b474684ce2b046f5b85baec9da6b1b6dfcdb608/docs/figure/eval_initial_power.Rmd/plot_fdr-1.png" target="_blank">0b47468</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-30
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f2ded41c55d0d6410c92394ca8ef9887b31066e6/docs/figure/eval_initial_power.Rmd/plot_fdr-1.png" target="_blank">f2ded41</a>
@@ -676,8 +727,7 @@ Joyce Hsiao
 </table>
 </div>
 </div>
-<pre class="r"><code>make_plots(res_merge, args=list(n1=250, labels=labels), 
-       title=&quot;pi0=.9, 1K genes, beta /sim N(0,1), 250/group&quot;)</code></pre>
+<pre class="r"><code>plot_fdr(res_merge) + ylim(0,1)</code></pre>
 <p><img src="figure/eval_initial_power.Rmd/plot_fdr-2.png" width="1152" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-plot_fdr-2">
@@ -701,6 +751,17 @@ Date
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/0b474684ce2b046f5b85baec9da6b1b6dfcdb608/docs/figure/eval_initial_power.Rmd/plot_fdr-2.png" target="_blank">0b47468</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-04-30
+</td>
+</tr>
 <tr>
 <td>
 <a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f2ded41c55d0d6410c92394ca8ef9887b31066e6/docs/figure/eval_initial_power.Rmd/plot_fdr-2.png" target="_blank">f2ded41</a>
@@ -735,28 +796,25 @@ Joyce Hsiao
 library(dplyr)
 res_merge_auc &lt;- res_merge %&gt;% group_by(method, seed, n1) %&gt;% slice(1)
 
-make_plots_auc &lt;- function(res, args=list(n1, labels), title) {
+plot_auc &lt;- function(res) {
   n_methods &lt;- length(unique(res$method))
   cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
-  res %&gt;% group_by(method) %&gt;%
-      filter(n1 == args$n1) %&gt;%
-      ggplot(., aes(x=method, y=auc, col=method)) +
-          geom_boxplot() + geom_point() +  
-          xlab(&quot;&quot;) + ylab(&quot;Area under the ROC curve&quot;) +
-          scale_x_discrete(position = &quot;top&quot;,
-                           labels=args$labels) +
+  res %&gt;% group_by(n1,method) %&gt;%
+      ggplot(., aes(x=factor(n1), y=auc, col=method)) +
+          geom_boxplot() + geom_point(cex=.7) +
+          facet_wrap(~method) +
+          xlab(&quot;Sample size per group&quot;) + ylab(&quot;Area under the ROC curve&quot;) +
           scale_color_manual(values=cols) +
       ggtitle(&quot;AUC&quot;) + 
-      theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=-.1)) +
-      stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;) +
-      stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=4, col=&quot;black&quot;)
+      stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=2, col=&quot;black&quot;) +
+      stat_summary(fun.y=median, geom=&quot;point&quot;, shape=18, size=2, col=&quot;black&quot;)
 }
 
 levels(factor(res_merge_auc$method))</code></pre>
 <pre><code>[1] &quot;deseq2&quot;               &quot;edger&quot;                &quot;limma_voom&quot;          
 [4] &quot;t_test&quot;               &quot;t_test_log2cpm_quant&quot; &quot;wilcoxon&quot;            </code></pre>
 <pre class="r"><code>labels &lt;- c(&quot;deseq2&quot;, &quot;edger&quot;, &quot;limma_v&quot;, &quot;t_test&quot;, &quot;t_log2cpm_q&quot;, &quot;wilcoxon&quot;)
-make_plots_auc(res_merge_auc, args=list(n1=50, labels=labels))</code></pre>
+plot_auc(res_merge_auc)</code></pre>
 <p><img src="figure/eval_initial_power.Rmd/plot_auc-1.png" width="672" style="display: block; margin: auto;" /></p>
 <p>
 <button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-plot_auc-1">
@@ -782,50 +840,18 @@ Date
 <tbody>
 <tr>
 <td>
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f06374b32157b7dcf17ef3889c355f043ffb8ad0/docs/figure/eval_initial_power.Rmd/plot_auc-1.png" target="_blank">f06374b</a>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/0b474684ce2b046f5b85baec9da6b1b6dfcdb608/docs/figure/eval_initial_power.Rmd/plot_auc-1.png" target="_blank">0b47468</a>
 </td>
 <td>
 Joyce Hsiao
 </td>
 <td>
-2019-04-26
+2019-04-30
 </td>
 </tr>
-</tbody>
-</table>
-</div>
-</div>
-<pre class="r"><code>levels(factor(res_merge_auc$method))</code></pre>
-<pre><code>[1] &quot;deseq2&quot;               &quot;edger&quot;                &quot;limma_voom&quot;          
-[4] &quot;t_test&quot;               &quot;t_test_log2cpm_quant&quot; &quot;wilcoxon&quot;            </code></pre>
-<pre class="r"><code>labels &lt;- c(&quot;deseq2&quot;, &quot;edger&quot;, &quot;limma_v&quot;, &quot;t_test&quot;, &quot;t_log2cpm_q&quot;, &quot;wilcoxon&quot;)
-make_plots_auc(res_merge_auc, args=list(n1=250, labels=labels))</code></pre>
-<p><img src="figure/eval_initial_power.Rmd/plot_auc-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-plot_auc-2">
-Past versions of plot_auc-2.png
-</button>
-</p>
-<div id="fig-plot_auc-2" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
 <tr>
 <td>
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f06374b32157b7dcf17ef3889c355f043ffb8ad0/docs/figure/eval_initial_power.Rmd/plot_auc-2.png" target="_blank">f06374b</a>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f06374b32157b7dcf17ef3889c355f043ffb8ad0/docs/figure/eval_initial_power.Rmd/plot_auc-1.png" target="_blank">f06374b</a>
 </td>
 <td>
 Joyce Hsiao
@@ -841,13 +867,14 @@ Joyce Hsiao
 </div>
 <div id="roc" class="section level2">
 <h2>ROC</h2>
-<pre class="r"><code>get_roc_est &lt;- function(res_merge, n1, fpr_nbin=500) {
-    method_list &lt;- levels(factor(res_merge$method))
-    seed_list &lt;- unique(res_merge$seed)
+<pre class="r"><code>get_roc_est &lt;- function(res, fpr_nbin=500) {
+    method_list &lt;- levels(factor(res$method))
+    seed_list &lt;- unique(res$seed)
 
     out_roc_est &lt;- lapply(1:length(method_list), function(i) {
-      df_sub &lt;- res_merge %&gt;% filter(method==method_list[i] &amp; n1==n1)
+      df_sub &lt;- res %&gt;% filter(method==method_list[i])
       roc_est_seed &lt;- lapply(1:length(seed_list), function(j) {
+        print(j)
         roc_set_seed_one &lt;- with(df_sub[df_sub$seed==seed_list[j],],
                                  pROC::auc(response=truth_vec, predictor=pval))
         fpr &lt;- 1-attr(roc_set_seed_one, &quot;roc&quot;)$specificities
@@ -872,95 +899,28 @@ Joyce Hsiao
     return(out)
 }
 
+n1_seq &lt;- c(50,250)
+roc_est &lt;- lapply(1:length(n1_seq), function(i) {
+  roc_est &lt;- get_roc_est(subset(res_merge, n1==n1_seq[i]), fpr_nbin=200)
+  roc_est$method &lt;- factor(roc_est$method)
+  roc_est$n1 &lt;- n1_seq[i]
+  return(roc_est)
+})
+roc_est_all &lt;- do.call(rbind, roc_est)
+roc_est_all$n1 &lt;- factor(roc_est_all$n1)
 
-roc_est_50 &lt;- get_roc_est(res_merge, n1=50, fpr_nbin=500)
-roc_est_50$method &lt;- factor(roc_est_50$method)
-ggplot(subset(roc_est_50, fpr_bin_mean &lt; .15 | tpr_est_mean &lt; .15), 
+saveRDS(roc_est_all, file = &quot;output/eval_initial_power.Rmd/roc_est_all.rds&quot;)</code></pre>
+<pre class="r"><code>roc_est_all &lt;- readRDS(file = &quot;output/eval_initial_power.Rmd/roc_est_all.rds&quot;)
+
+n_methods &lt;- length(unique(res_merge$method))
+cols &lt;- RColorBrewer::brewer.pal(n_methods,name=&quot;Dark2&quot;)
+ggplot(subset(roc_est_all, fpr_bin_mean &lt; .15), 
        aes(x=fpr_bin_mean, y=tpr_est_mean, col=method)) +
-  geom_step() + xlab(&quot;False discovery rate&quot;) + ylab(&quot;Sensitivity&quot;) +
+  geom_step() + 
+  scale_color_manual(values=cols) +
+  facet_wrap(~n1) + xlab(&quot;False discovery rate&quot;) + ylab(&quot;Sensitivity&quot;) +
   ggtitle(&quot;Sensitivity and false discovery rate (ROC curve)&quot;)</code></pre>
-<p><img src="figure/eval_initial_power.Rmd/plot_roc-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-plot_roc-1">
-Past versions of plot_roc-1.png
-</button>
-</p>
-<div id="fig-plot_roc-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f06374b32157b7dcf17ef3889c355f043ffb8ad0/docs/figure/eval_initial_power.Rmd/plot_roc-1.png" target="_blank">f06374b</a>
-</td>
-<td>
-Joyce Hsiao
-</td>
-<td>
-2019-04-26
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<pre class="r"><code>roc_est_250 &lt;- get_roc_est(res_merge, n1=250, fpr_nbin=500)
-roc_est_250$method &lt;- factor(roc_est_250$method)
-ggplot(subset(roc_est_250, fpr_bin_mean &lt; .15 | tpr_est_mean &lt; .15), 
-       aes(x=fpr_bin_mean, y=tpr_est_mean, col=method)) +
-  geom_step() + xlab(&quot;False discovery rate&quot;) + ylab(&quot;Sensitivity&quot;) +
-  ggtitle(&quot;Sensitivity and false discovery rate (ROC curve)&quot;)</code></pre>
-<p><img src="figure/eval_initial_power.Rmd/plot_roc-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-plot_roc-2">
-Past versions of plot_roc-2.png
-</button>
-</p>
-<div id="fig-plot_roc-2" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/f06374b32157b7dcf17ef3889c355f043ffb8ad0/docs/figure/eval_initial_power.Rmd/plot_roc-2.png" target="_blank">f06374b</a>
-</td>
-<td>
-Joyce Hsiao
-</td>
-<td>
-2019-04-26
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/eval_initial_power.Rmd/unnamed-chunk-2-1.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
 <div id="old" class="section level2">
 <h2>Old</h2>
@@ -1002,7 +962,7 @@ get_roc_est &lt;- function(pvals_res, fpr_nbin=100) {
     seed_list &lt;- unique(pvals_res$seed)
     
     out_roc_est &lt;- lapply(1:length(method_list), function(i) {
-      df_sub &lt;- pvals_res %&gt;% filter(method==method_list[i] &amp; prop_null==prop_null)
+      df_sub &lt;- pvals_res %&gt;% filter(method==method_list[i])
       roc_est_seed &lt;- lapply(1:length(seed_list), function(j) {
         roc_set_seed_one &lt;- with(df_sub[df_sub$seed==seed_list[j],],
                                  pROC::auc(response=truth_vec, predictor=qval))
@@ -1163,9 +1123,9 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] cowplot_0.9.4   forcats_0.3.0   stringr_1.3.1   dplyr_0.8.0.1  
- [5] purrr_0.3.2     readr_1.3.1     tidyr_0.8.3     tibble_2.1.1   
- [9] ggplot2_3.1.0   tidyverse_1.2.1 dscrutils_0.3.8
+ [1] forcats_0.3.0   stringr_1.3.1   dplyr_0.8.0.1   purrr_0.3.2    
+ [5] readr_1.3.1     tidyr_0.8.3     tibble_2.1.1    ggplot2_3.1.0  
+ [9] tidyverse_1.2.1 dscrutils_0.3.8
 
 loaded via a namespace (and not attached):
  [1] Rcpp_1.0.1         RColorBrewer_1.1-2 cellranger_1.1.0  
@@ -1176,16 +1136,15 @@ loaded via a namespace (and not attached):
 [16] lattice_0.20-38    pkgconfig_2.0.2    rlang_0.3.4       
 [19] cli_1.0.1          rstudioapi_0.10    yaml_2.2.0        
 [22] haven_1.1.2        withr_2.1.2        xml2_1.2.0        
-[25] httr_1.3.1         knitr_1.20         pROC_1.13.0       
-[28] hms_0.4.2          generics_0.0.2     fs_1.2.6          
-[31] rprojroot_1.3-2    grid_3.5.1         tidyselect_0.2.5  
-[34] glue_1.3.0         R6_2.4.0           readxl_1.1.0      
-[37] rmarkdown_1.10     modelr_0.1.2       magrittr_1.5      
-[40] whisker_0.3-2      backports_1.1.2    scales_1.0.0      
-[43] htmltools_0.3.6    rvest_0.3.2        assertthat_0.2.0  
-[46] colorspace_1.3-2   labeling_0.3       stringi_1.2.4     
-[49] lazyeval_0.2.1     munsell_0.5.0      broom_0.5.1       
-[52] crayon_1.3.4      </code></pre>
+[25] httr_1.3.1         knitr_1.20         hms_0.4.2         
+[28] generics_0.0.2     fs_1.2.6           rprojroot_1.3-2   
+[31] grid_3.5.1         tidyselect_0.2.5   glue_1.3.0        
+[34] R6_2.4.0           readxl_1.1.0       rmarkdown_1.10    
+[37] modelr_0.1.2       magrittr_1.5       whisker_0.3-2     
+[40] backports_1.1.2    scales_1.0.0       htmltools_0.3.6   
+[43] rvest_0.3.2        assertthat_0.2.0   colorspace_1.3-2  
+[46] labeling_0.3       stringi_1.2.4      lazyeval_0.2.1    
+[49] munsell_0.5.0      broom_0.5.1        crayon_1.3.4      </code></pre>
 </div>
 </div>
 
