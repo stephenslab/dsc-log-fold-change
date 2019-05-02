@@ -22,6 +22,10 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# Usage:
+# ./monitor.py dsc benchmark.dsc -host config.yaml
+
+
 import time
 import psutil
 import subprocess
@@ -71,17 +75,17 @@ class ProcessTimer:
           rss_memory += mem_info[0]
           vms_memory += mem_info[1]
         except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
-          
+
           # Sometimes a subprocess descendant will have terminated
           # between the time we obtain a list of descendants, and the
           # time we actually poll this descendant's memory usage.
           pass
       if int(self.max_vms_memory * 1E-8) < int(vms_memory * 1E-8):
-        
+
         # Peak memory updated, at ~100-MB resolution.
         self.max_t = [self.t1]
       if int(self.max_vms_memory * 1E-8) == int(vms_memory * 1E-8):
-        
+
         # Peak memory maintained.
         self.max_t = [self.max_t[0], self.t1]
       self.max_vms_memory = max(self.max_vms_memory,vms_memory)
@@ -133,14 +137,14 @@ if __name__ == '__main__':
 
   try:
     ptimer.execute()
-    
+
     # Poll as often as possible; otherwise the subprocess might
     # "sneak" in some extra memory usage while you aren't looking.
     while ptimer.poll():
       time.sleep(ptimer.interval)
-      
+
   finally:
-    
+
     # Make sure that we don't leave the process dangling.
     ptimer.close()
 
