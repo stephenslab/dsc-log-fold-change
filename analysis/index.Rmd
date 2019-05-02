@@ -8,25 +8,30 @@ output:
 
 Project website for benchmarking methods for single-cell DE methods. 
 
-* Initial evaluations using PBMC dataset
-    * Objectives:
-        + Performances undering large sample size (e.g., 50/group, 250/group)
-        + Focusing on generic methods: not yet tailored methods for single-cell data
-    * Effect size, power and sample size [RESULTS](eval_initial.html)
-    * Power and false discovery rate: betasd=1, 1K genes drawn randomly, 10% true effects [RESULTS](eval_initial_power.html)
-    * Type I error: betasd=1, 1K genes drawn randomly [RESULTS](eval_initial_type1.html)    
+## Analysis
 
-* Evaluation using GTEx lung data
-    * Objective:
-        + Do bulk methods perform as expected in bulk data?
-        + Performance under small to large sample size (e.g., 5, 10, 50, 250)
-    * Type I error: betasd=1, 1K genes drawn randomly [RESULTS](gtex_type1.html)    
-    * Power and false discovery rate: betasd=1, 1K genes drawn randomly, 10% true effects [RESULTS](gtex_power.html)
+### Sample size: 
+
+* Questions
+    * Performances undering large sample size (e.g., 50/group, 250/group)
+    * Focusing on generic methods: not yet tailored methods for single-cell data
+    * Do bulk methods perform as expected in bulk data?
+
+* Simulations based on PBMC data
+    * [Effect size, power and sample size](eval_initial.html)
+    * [Power and false discovery rate](eval_initial_power.html)
+    * [Type I error](eval_initial_type1.html)    
     
+* Simulations based on GTEx lung data
+    * [Type I error](gtex_type1.html)    
+    * [Power and false discovery rate](gtex_power.html)
     
-* [Data curation procedure](../dsc/data/README.md).
-    * 10x Genomics PBMC dataset
-    * GTEx lung samples
+
+### Data we used 
+
+* [README](../dsc/data/README.md)
+* 10x Genomics PBMC dataset
+* GTEx lung samples
 
 ---
 

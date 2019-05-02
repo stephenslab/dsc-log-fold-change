@@ -10,7 +10,9 @@ output:
 
 ## Introduction
 
-* Evaluate power of some DE methods for data with potential confounded design
+* Evaluate method performance in dataset with non-null effects, such as power, false discovery rate, and area under true positive rate-sensitivity curve, using default normalization and filtering steps: edger, deseq2, limma_voom, t_test + input log2(Y+1), t_test + input log2CPM expression data quantiled normalized per gene, wilcoxon + input count data
+
+* Assume equal library size for all samples
 
 * Experimental data: PBMC of 2,683 samples and ~ 11,000 genes, including 7+ cell types. This data has large number of zeros (93% zeros in the count matrix).
 
@@ -19,6 +21,7 @@ output:
   + number of samples per group: (50, 50), (250, 250); draw n1+n2 from experimental data, then randomly assigned to group 1 or group 2
   + fraction of true effects: .1
   + distribution of true effects: normal distribution with mean 0 and sd 1
+  
   
 
 

@@ -1,5 +1,5 @@
 ---
-title: "Initial method evaluation: type I error"
+title: "Method eval applying to bulk RNA-seq: type I error"
 author: "Joyce Hsiao"
 date: "2019-04-29"
 output: 
@@ -14,13 +14,14 @@ output:
 
 * Assume equal library size for all samples
 
-* Experimental data: PBMC of 2,683 samples and ~ 11,000 genes, including 7+ cell types. This data has large number of zeros (93% zeros in the count matrix).
+* Experimental data: GTEx V6 lung tissue, 320 samples and 16,069 genes.
 
 * Simulation parameters
   + number of genes: 1,000 randomly sampled from experimental data
-  + number of samples per group: (50, 50), (250, 250); draw n1+n2 from experimental data, then randomly assigned to group 1 or group 2
+  + number of samples per group: (5,5), (10,10), (50,50), (150,150); draw n1+n2 from experimental data, then randomly assigned to group 1 or group 2
   + fraction of true effects: 0
   + distribution of true effects: normal distribution with mean 0 and sd 1
+  
   
 
 ---
@@ -37,41 +38,42 @@ library(tidyverse)
 extract dsc output and get p-values, q-values, true signals, etc.
 
 ```{r, warning=F, message=F, eval=F}
-dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_type1"
+dir_dsc <- "/scratch/midway2/joycehsiao/dsc-log-fold-change/pipe_gtex"
 
 dsc_res <- dscquery(dir_dsc, 
-                    targets=c("data_poisthin_null",
-                              "data_poisthin_null.seed", 
-                              "data_poisthin_null.n1",
+                    targets=c("data_poisthin_gtex",
+                              "data_poisthin_gtex.seed", 
+                              "data_poisthin_gtex.n1",
+                              "data_poisthin_gtex.prop_null",
                               "method", "pval_rank"), 
                     ignore.missing.file = T)
 
 method_vec <- as.factor(dsc_res$method)
 n_methods <- nlevels(method_vec)
-
-
-res <- vector("list",n_methods)
+dsc_res <- dsc_res[dsc_res$method != "sva_limma_voom" & dsc_res$method != "sva_ttest",]
+res <- list()
 for (i in 1:nrow(dsc_res)) {
-#  print(i)
+  print(i)
   fl_pval <- readRDS(file.path(dir_dsc,
                        paste0(as.character(dsc_res$method.output.file[i]), ".rds")))
-  # fl_beta <- readRDS(file.path(dir_dsc,
-  #                  paste0(as.character(dsc_res$data_poisthin_null.output.file[i]), ".rds")))
-  seed <- dsc_res$data_poisthin_null.seed[i]
-  n1 <- dsc_res$data_poisthin_null.n1[i]
+  fl_beta <- readRDS(file.path(dir_dsc,
+                    paste0(as.character(dsc_res$data_poisthin_gtex.output.file[i]), ".rds")))
+  prop_null <- dsc_res$data_poisthin_gtex.prop_null[i]
+  seed <- dsc_res$data_poisthin_gtex.seed[i]
+  n1 <- dsc_res$data_poisthin_gtex.n1[i]
   # fl_qval <- readRDS(file.path(dir_dsc,
   #                    paste0(as.character(dsc_res$pval_rank.output.file[i]), ".rds")))
   res[[i]] <- data.frame(method = as.character(dsc_res$method)[i],
                          seed = seed,
                          n1=n1,
+                         prop_null=prop_null,
                          pval = fl_pval$pval,
+                         true_vec = fl_beta$beta != 0,
                          stringsAsFactors = F)
 }
 res_merge <- do.call(rbind, res)
-res_merge$method <- factor(res_merge$method)
-res_merge$n1 <- factor(res_merge$n1)
 
-saveRDS(res_merge, file = "output/eval_initial_type1.Rmd/res_merge.rds")
+saveRDS(res_merge, file = "output/gtex_type1.Rmd/res_merge.rds")
 ```
 
 
@@ -80,7 +82,7 @@ saveRDS(res_merge, file = "output/eval_initial_type1.Rmd/res_merge.rds")
 
 
 ```{r}
-res_merge <- readRDS(file = "output/eval_initial_type1.Rmd/res_merge.rds")
+res_merge <- readRDS(file = "output/gtex_type1.Rmd/res_merge.rds")
 
 make_plots <- function(res, alpha, labels,
                        args=list(n1, labels)) {
@@ -89,9 +91,6 @@ make_plots <- function(res, alpha, labels,
   res %>% filter(n1==args$n1) %>% 
     group_by(method, seed) %>%
     summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval))) %>%
-#    group_by(method) %>%
-    # summarise(mn=mean(type1, na.rm=T), 
-    #           n=sum(!is.na(type1)), se=sd(type1, na.rm=T)/sqrt(n)) %>%
     ggplot(., aes(x=method, y=type1, col=method)) +
         # geom_errorbar(aes(ymin=mn+se, ymax=mn-se), width=.3) + 
         geom_boxplot() + geom_point(size=.7) + xlab("") +
@@ -104,24 +103,67 @@ make_plots <- function(res, alpha, labels,
 
 library(cowplot)
 levels(factor(res_merge$method))
-
-make_plots(res_merge, alpha=.001,
-           args=list(n1=50, labels=labels)) + 
-          ggtitle("Type error at alpha < .001, 50/group") + ylim(0,.025) +
-          geom_hline(yintercept=.001, col="gray30", lty=3) +
-          stat_summary(fun.y=median, geom="point", shape=18, size=6, col="black") +
-          stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
-
-make_plots(res_merge, alpha=.001,
-             args=list(n1=250, labels=labels)) + 
-            ggtitle("Type error at alpha < .001, 250/group") + ylim(0,.03) +
+labels <- c("deseq2", "edger", "limma_v", "sva_ttest", "t_test", "t_test_log2cpm_q", "wilcoxon")
+  
+make_plots(subset(res_merge, prop_null==1), alpha=.001,
+             args=list(n1=50, labels=labels)) + 
+            ggtitle("Type error at alpha < .001, 50/group") + 
             geom_hline(yintercept=.001, col="gray30", lty=3) +
             stat_summary(fun.y=median, geom="point", shape=18, size=6, col="black") +
             stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 ```
 
+> wilcoxon type I error is ~.06 for one dataset, and the corresponding type I error of t-test is ~.01, but for limma_voom is .001. Below I go over this null dataset. For 54 genes in this null dataset, wilcoxon test returned a smaller p-value than t-test. I investigated possible explanations for this, such as number of tied values and mean-variance relationship. But haven't reached a clear idea of why this may be the case? 
 
-log2 scale
+ 
+```{r check_outlier, eval=F}
+# strange outlier
+res <- subset(res_merge, prop_null==1);alpha=.001;args=list(n1=50)
+out <- res %>% filter(n1==args$n1) %>% 
+  group_by(method, seed) %>%
+  summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval)))
+out[which(out$type1 > .06),]
+  
+oo <- subset(res_merge, prop_null==1 & seed==93 & n1==50)
+oo %>% group_by(method) %>%
+  summarise(type1=mean(pval<alpha, na.rm=T), nvalid=sum(!is.na(pval)))
+methods_vec <- unique(oo$method)
+oo_print <- lapply(1:length(methods_vec), function(i) {
+  which(oo[oo$method == methods_vec[i],]$pval < .001)
+})
+names(oo_print) <- methods_vec
+
+# all sig. in wilcoxn also sig in t.test
+setdiff(oo_print$t_test, oo_print$wilcoxon)
+
+# genes sig. in wilcox but not in t.test
+setdiff(oo_print$wilcoxon, oo_print$t_test)
+
+# get the expression file
+ff <- subset(dsc_res, method=="wilcoxon" & data_poisthin_gtex.prop_null==1 & data_poisthin_gtex.seed==93 & data_poisthin_gtex.n1==50)
+
+df <- readRDS(file.path(dir_dsc, 
+                        paste0(ff$data_poisthin_gtex.output.file, ".rds")))
+check_genes <- setdiff(oo_print$wilcoxon, oo_print$t_test)
+
+do.call(rbind, lapply(1:length(check_genes), function(i) {
+  list(pval_wil=wilcox.test(df$Y[check_genes[i],]~df$X[,2], correct=T)$p.value,
+       pval_t=t.test(log2(df$Y[check_genes[i],]+1)~df$X[,2])$p.value) } ) )
+
+# check if the issue is related to ties in count data
+# no...
+dd <- sapply(1:nrow(df$Y), function(i) sum(duplicated(df$Y[i,])))
+table(dd[oo_print$wilcoxon])
+
+# check if the issue is related to mean-variance dependency
+col_vec <- rep("black", nrow(df$Y))
+col_vec[check_genes] <- "red"
+v <- voom(df$Y, design=df$X, plot=T, save.plot = T)
+plot(x=v$voom.xy$x,y=v$voom.xy$y,col=col_vec)
+```
+
+
+log2 scale by method by sample size
 
 ```{r}
 make_plots_log2 <- function(res, alpha, labels,
@@ -139,7 +181,8 @@ make_plots_log2 <- function(res, alpha, labels,
     #           n=sum(!is.na(type1)), se=sd(type1, na.rm=T)/sqrt(n)) %>%
     ggplot(data=res_plot, aes(x=method, y=log2(type1), col=method)) +
         # geom_errorbar(aes(ymin=mn+se, ymax=mn-se), width=.3) + 
-        geom_boxplot() + geom_point(size=.7) + xlab("") +
+        #geom_boxplot() + 
+      geom_point(size=.7) + xlab("") +
       scale_x_discrete(position = "top",
                        labels=args$labels) +
       scale_color_manual(values=cols) +
@@ -152,17 +195,26 @@ make_plots_log2 <- function(res, alpha, labels,
 
 library(cowplot)
 levels(factor(res_merge$method))
-labels <- c("deseq2", "edger", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
+labels <- c("deseq2", "edger", "limma_v", "sva_ttest", "t_test", "t_log2cpm_q", "wilcoxon")
 
-make_plots_log2(res_merge, alpha=.001,
-                 args=list(n1=50, labels=labels)) + 
-                ggtitle("Type I error at alpha < .001, 50/group") + #ylim(0,.03) +
+make_plots_log2(subset(res_merge, prop_null==1), alpha=.001,
+                 args=list(n1=5, labels=labels)) + 
+                ggtitle("Type I error at alpha < .001, 5/group") + ylim(-11,-3) +
                 geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
                 ylab("log2 type I error") 
-
-make_plots_log2(res_merge, alpha=.001,
-                 args=list(n1=250, labels=labels)) + 
-                ggtitle("Type error at alpha < .001, 250/group") + 
+make_plots_log2(subset(res_merge, prop_null==1), alpha=.001,
+                 args=list(n1=10, labels=labels)) + 
+                ggtitle("Type I error at alpha < .001, 10/group") + ylim(-11,-3) +
+                geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
+                ylab("log2 type I error") 
+make_plots_log2(subset(res_merge, prop_null==1), alpha=.001,
+                 args=list(n1=50, labels=labels)) + 
+                ggtitle("Type I error at alpha < .001, 50/group") + ylim(-11,-3) +
+                geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
+                ylab("log2 type I error") 
+make_plots_log2(subset(res_merge, prop_null==1), alpha=.001,
+                 args=list(n1=150, labels=labels)) + 
+                ggtitle("Type I error at alpha < .001, 150/group") + ylim(-11,-3) +
                 geom_hline(yintercept=log2(.001), col="gray30", lty=3) +
                 ylab("log2 type I error") 
 ```
@@ -195,36 +247,27 @@ make_plots_log2_v2 <- function(res, alpha) {
     ylab("log2 Type I error") + xlab("sample size/group")
 }
 
-make_plots_log2_v2(res_merge, alpha=.001) + 
+# library(cowplot)
+# levels(factor(res_merge$method))
+# labels <- c("deseq2", "edger", "limma_v", "t_test", "t_log2cpm_q", "wilcoxon")
+
+make_plots_log2_v2(subset(res_merge, prop_null==1), alpha=.001) + 
                 ggtitle("Type I error at alpha < .001") + ylim(-12,-3)
-
-
-res_merge %>% #filter(n1==args$n1) %>% 
-  group_by(n1, method, seed) %>%
-  summarise(type1=mean(pval<.001, na.rm=T), nvalid=sum(!is.na(pval)))  %>%
-  group_by(method, n1) %>%
-  summarise(mn=mean(type1, na.rm=T),
-            med=median(type1, na.rm=T))
 ```
 
 
 histogram of unadjusted p-value of one dataset
 
-```{r}
-tmp <- subset(res_merge, n1==50) %>%
+```{r, fig.width=10}
+tmp <- subset(res_merge, prop_null==1 & n1==150) %>%
   group_by(seed, method) %>%
   summarise(type1=mean(pval < .001, na.rm=T)) 
 tmp[which.max(tmp$type1),]
-tmp[tmp$seed==90,]
+tmp[tmp$seed==89,]
 
-subset(res_merge, n1==50 & seed==90) %>% #filter(n1==args$n1) %>% 
-  group_by(method) %>%
-  summarise(type1=mean(pval<.001, na.rm=T), nvalid=sum(!is.na(pval)))  
-
-subset(res_merge, n1==50 & seed==90) %>%
+subset(res_merge, prop_null==1 & n1==50 & seed==89) %>%
   ggplot(., aes(x=pval)) +
   geom_histogram(bins=30) +
   facet_wrap(~method)
 ```
-
 
