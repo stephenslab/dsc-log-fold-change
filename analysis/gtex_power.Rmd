@@ -183,7 +183,7 @@ get_roc_est <- function(res, fpr_nbin=500) {
     out_roc_est <- lapply(1:length(method_list), function(i) {
       df_sub <- res %>% filter(method==method_list[i])
       roc_est_seed <- lapply(1:length(seed_list), function(j) {
-        print(j)
+        #print(j)
         roc_set_seed_one <- with(df_sub[df_sub$seed==seed_list[j],],
                                  pROC::auc(response=truth_vec, predictor=pval))
         fpr <- 1-attr(roc_set_seed_one, "roc")$specificities

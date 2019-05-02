@@ -1,32 +1,32 @@
 #!/usr/bin/env dsc
 
 # pipeline variables  --------------------------------------------------
-# $Y: 'ngene' by `nsamp` matrix of counts for samples
-# $X: model design matrix of 'nsamp' rows and 2 columns: the second column encodes to the group effect (0,1), and the first column corresponds to the intercept
-# $beta: an 'ngene' vector of simulated true values beta (used 'poisthin' function)
-# $log_fold_change_est: an `ngene` vector of estimated values beta
-# $s_hat: an 'ngene' vector of estimated values standard error
-# $pval: an 'ngene' vector of p-values
-# $df: an 'ngene' vector of degrees of freedom
-# $type_one_error: an 'ngene' vector of degrees of freedom
-# $qval: an 'ngene' vector of adjusted p-values, currently we use 'qvalue' from the 'qvalue'
-# $fdr_est: an 'ngene' vector of estimated vaules for false discover rate (depend on 'fdr_thres' level)
-# $auc_est: an 'ngene' vector of estimated values for area under the curve (using pROC package)
+# $Y: count matrix; 'ngene' by 'nsamp' matrix
+# $X: model design matrix; samples in rows and variables in columns
+# $beta: simulated effect sizes, i.e., log2 fold-change; a length 'ngene' vector
+# $log_fold_change_est: estimated log2 fold-changes (i.e., estimated betas); a length `ngene` vector
+# $s_hat: estimated standard errors; a length 'ngene' vector
+# $df: degrees of freedom; a 'ngene' vector
+# $pval: p-values; a length 'ngene' vector
+# $type1error: type I error in one dataset at a given alpha level
+# $qval: adjusted p-values, computed using 'qvalue' package; a 'ngene' vector
+# $fdr: false discovery rate in one dataset at a given qvalue threshold ('fdr_thres'); a length 'ngene' vector
+# $auc: area under the curve of sensitivty vs false discovery rate, computed using 'pROC' package; a length 'ngene' vector
 
 
-# module groups --------------------------------------------------------
-# data:
+# Outline module groups -------------------------------------------------
+# make_data:
 #   input: "data/pbmc_counts.rds"
 #   output:  $Y, $X, $beta
-# method:
+# run_methods:
 #   input: $Y, $X
 #   output:  $log_fold_change_est, $s_hat, $pval, $df
-# pval_rank:
+# rank_pvals:
 #   input: $pval
 #   output: $qval
-# score:
+# score_methods:
 #   input: $pval, $qval, $beta
-#   output: $type_one_error, $fdr_est, $auc_est
+#   output: $type1error, $fdr, $auc
 
 
 # Define DSC modules and pipelines --------------------------------------
@@ -34,33 +34,55 @@
 DSC:
   define:
     # generate simulated data
-    data: data_poisthin_choose_betasd, data_poisthin_power, data_poisthin_null
+    make_data:
+      data_poisthin_choose_betasd, data_poisthin, data_poisthin_libsize, data_poisthin_gtex
 
     # differential expression analysis
-    method: edger, deseq2, limma_voom, sva_voom, t_test_log2cpm_quant, wilcoxon
+    run_methods: edger, deseq2, limma_voom, t_test_log2p1, t_test_log2p1_cpm_quant, wilcoxon
 
     # scoring methods
-    pval_rank: qvalue
-    score: type_one_error, fdr, auc
+    rank_pvals: qvalue
+    score_methods: type1error, fdr, auc
+
   run:
-    pipe_power_choose_betasd: data_poisthin_choose_betasd * (edger, limma_voom) * pval_rank
-    pipe_power: data_poisthin_power * method * pval_rank
-    pipe_type1: data_poisthin_null * method * pval_rank
+    pipe_choose_betasd: data_poisthin_choose_betasd * (edger, limma_voom) * rank_pvals
+    pipe_pbmc: data_poisthin * run_methods * rank_pvals
+    pipe_gtex: data_poisthin_gtex * run_methods * rank_pvals
+    pipe_null_libsize: data_poisthin_libsize * run_methods * rank_pvals
 
   exec_path: modules
 
 #  output:
-#    /scratch/midway2/joycehsiao/dsc-log-fold-change/benchmark
+#    /scratch/midway2/joycehsiao/dsc-log-fold-change
 
 
 # data modules ----------------------------------------------------------
 
+# null data with different library sizes
+data_poisthin_libsize(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) + \
+       poisthin.R + filter_genes.R + \
+       R(out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_fun=function(n) rep(libsize_factor, n), signal_params=list(), prop_null = prop_null)) + \
+       R(X <- out$X; Y <- t(out$Y); beta <- out$beta) + \
+       R(keep_genes <- filter_genes(Y, min_cell_detected=1)) + \
+       R(Y <- Y[keep_genes,]; beta <- beta[keep_genes])
+  n1, n2: (50, 50)
+  ngene: 1000
+  prop_null: 0
+  gselect: "random"
+  libsize_factor: 0, 1, 2, 4
+  $Y: Y
+  $X: X
+  $beta: beta
+
+
+# Description:
+#   90% null genes, equal sample sizes across conditions
+# for evaluating power in relation to sample size
 data_poisthin_choose_betasd: R(counts = readRDS(dataFile)) + \
        poisthin.R + \
-       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
+       R(out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
        R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
   dataFile: "data/pbmc_counts.rds"
-  seed: R{2:51}
   n1, n2: (50, 50), (100, 100), (250, 250)
   ngene: 1000
   prop_null: .9
@@ -71,30 +93,17 @@ data_poisthin_choose_betasd: R(counts = readRDS(dataFile)) + \
   $beta: beta
 
 
-
-data_poisthin_power(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) + \
+# Description:
+#   90% null genes, scRNA-seq
+#   equal library sizes and sample sizes (across conditions)
+data_poisthin: R(counts = readRDS(dataFile)) + \
        poisthin.R + \
-       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
+       R(out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
        R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
   dataFile: "data/pbmc_counts.rds"
-  seed: R{2:51}
   n1, n2: (50, 50), (250, 250)
   ngene: 1000
-  prop_null: .9
-  gselect: "random"
-  betasd: 1
-  $Y: Y
-  $X: X
-  $beta: beta
-
-data_poisthin_null(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) + \
-       poisthin.R + \
-       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
-       R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
-  seed: R{2:101}
-  n1, n2: (50, 50), (250, 250)
-  ngene: 1000
-  prop_null: 1
+  prop_null: .9, 1
   gselect: "random"
   betasd: 1
   $Y: Y
@@ -102,21 +111,35 @@ data_poisthin_null(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) +
   $beta: beta
 
 
-data_poisthin_libsize(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) + \
+
+# Description:
+#   90% null genes, bulk RNA-seq
+#   equal library sizes and sample sizes (across conditions)
+data_poisthin_gtex: R(counts = readRDS(dataFile)) + \
        poisthin.R + \
-       R(set.seed(seed=seed); out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_fun=function(n) rep(5, n), signal_params=list(), prop_null = prop_null)) + \
+       R(out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
        R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
-  seed: R{2:11}
-  n1, n2: (50, 50), (250, 250)
+  dataFile: "data/gtex_lung.rds"
+  n1, n2: (5, 5), (10, 10), (50, 50), (150, 150)
   ngene: 1000
-  prop_null: 0
+  prop_null: .9, 1
   gselect: "random"
+  betasd: 1
   $Y: Y
   $X: X
   $beta: beta
 
 
-# method modules ------------------------------------------------------------------
+
+
+
+
+
+# Method modules ------------------------------------------------------------------
+# For example, one can define method module groups as follows,
+#    run_methods_1: edger, deseq2, limma_voom, t_test_log2p1, t_test_log2p1cpm_quant, wilcoxon
+#    run_methods_2: edger, deseq2, limma_voom, t_test_log2p1, wilcoxon
+
 
 deseq2: deseq2.R + \
       R(res <- deseq2(Y, X))
@@ -178,8 +201,9 @@ mast: mast.R + \
    $s_hat: res$sebetahat
    $df: res$df
 
-sva_voom: sva_voom.R + \
-    R(res <- sva_voom(Y, X))
+sva_limma_voom: sva.R + limma_voom.R + \
+    R(output_sva <- sva(Y, X)) +\
+    R(res <- limma_voom(Y, X=output_sva$X.sv))
     Y: $Y
     X: $X
     $pval: res$pvalues
@@ -187,7 +211,24 @@ sva_voom: sva_voom.R + \
     $s_hat: res$sebetahat
     $df: res$df
 
-t_test_log2cpm_quant: t_test.R + normalize_counts.R + \
+#sva_ttest: t_test.R + sva.R +\
+#    R(output_sva <- sva(Y, X)) +\
+#    R(log2_counts <- log2(Y+1)) + \
+#    R(res <- t_test(Y=log2_counts, X=cbind(X,output_sva$X.sv)))
+#    Y: $Y
+#    X: $X
+#   $pval: res[2,]
+#   $log_fold_change_est: res[1,]
+
+t_test_log2p1: t_test.R + \
+     R(log2_counts <- log2(Y+1)) + \
+     R(res <- t_test(log2_counts, X))
+   Y: $Y
+   X: $X
+   $pval: res[2,]
+   $log_fold_change_est: res[1,]
+
+t_test_log2p1_cpm_quant: t_test.R + normalize_counts.R + \
      R(log2cpm_qqnormed <- normalize_log2cpm(Y)) + \
      R(res <- t_test(log2cpm_qqnormed, X))
    Y: $Y
@@ -223,19 +264,20 @@ wilcoxon: wilcoxon.R + \
 
 
 # Scoring modules --------------------------------------------------------------
+# rank_pvals: qvalue
+# score_methods: type1error, qvalue, fdr, auc
 
-type_one_error: R(truth_vec <- beta !=0; pval_null <- pval[which(truth_vec ==F)]) +\
+qvalue: qvalue.R + \
+  R(qval <- get_qvalue(pval) )
+  pval: $pval
+  $qval: qval
+
+type1error: R(truth_vec <- beta !=0; pval_null <- pval[which(truth_vec ==F)]) +\
               R(out <- mean(pval_null < pval_thres, na.rm = TRUE) )
   pval_thres: .01
   pval: $pval
   beta: $beta
   $type_one_error: out
-
-qvalue: R(library(qvalue); qval <- qvalue(p=pval)$qvalues)
-  pval: $pval
-  $qval: qval
-
-#try(qvalue(p=a$pval))
 
 fdr: R(truth_vec <- beta !=0) + \
     R(fdr_est <- sum(qval < fdr_thres & !truth_vec, na.rm=TRUE)/sum(qval < fdr_thres, na.rm=TRUE))
