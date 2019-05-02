@@ -6,7 +6,7 @@ DSC:
       home: /home/joycehsiao
     queue_type: pbs
     status_check_interval: 60
-    max_running_jobs: 40
+    max_running_jobs: 60
     max_cores: 40
     max_walltime: "36:00:00"
     max_mem: 64G
@@ -50,15 +50,14 @@ DSC:
 
 default:
   queue: giladlab
-  time_per_instance: 2m
-  instances_per_job: 1
-  n_cpu: 2
-  mem_per_cpu: 4G
+  time_per_instance: 3m
+  instances_per_job: 30
+  n_cpu: 1
+  mem_per_cpu: 2G
 
 # module specific configurations
-# mostly to consolidate small jobs
-get_data:
-  instances_per_job: 20
-method:
+run_methods:
   time_per_instance: 6m
   instances_per_job: 20
+
+
