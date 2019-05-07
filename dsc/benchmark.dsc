@@ -11,7 +11,7 @@
 # $type1error: type I error in one dataset at a given alpha level
 # $qval: adjusted p-values, computed using 'qvalue' package; a 'ngene' vector
 # $fdr: false discovery rate in one dataset at a given qvalue threshold ('fdr_thres'); a length 'ngene' vector
-# $auc: area under the curve of sensitivty vs false discovery rate, computed using 'pROC' package; a length 'ngene' vector
+# $auc: area under the ROC curve (false positive vs true positive rate), computed using 'pROC' package; a length 'ngene' vector
 
 
 # Outline module groups -------------------------------------------------
@@ -38,16 +38,22 @@ DSC:
       data_poisthin_choose_betasd, data_poisthin, data_poisthin_libsize, data_poisthin_gtex
 
     # differential expression analysis
-    run_methods: edger, deseq2, limma_voom, t_test_log2p1, t_test_log2p1_cpm_quant, wilcoxon
+    run_methods:
+      edger, deseq2, limma_voom, t_test_log2p1, t_test_log2p1_cpm_quant, wilcoxon
 
     # scoring methods
     rank_pvals: qvalue
     score_methods: type1error, fdr, auc
 
   run:
+    # Evaluate power in relation to sample size
     pipe_choose_betasd: data_poisthin_choose_betasd * (edger, limma_voom) * rank_pvals
+
+    # Sample size and method performance
     pipe_pbmc: data_poisthin * run_methods * rank_pvals
     pipe_gtex: data_poisthin_gtex * run_methods * rank_pvals
+
+    # Library size normalization and method performance
     pipe_null_libsize: data_poisthin_libsize * run_methods * rank_pvals
 
   exec_path: modules
@@ -58,76 +64,53 @@ DSC:
 
 # data modules ----------------------------------------------------------
 
-# null data with different library sizes
-data_poisthin_libsize(data_poisthin_choose_betasd): R(counts = readRDS(dataFile)) + \
-       poisthin.R + filter_genes.R + \
-       R(out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_fun=function(n) rep(libsize_factor, n), signal_params=list(), prop_null = prop_null)) + \
+# 90% null genes, equal sample sizes across conditions
+data_poisthin_choose_betasd: R(counts = readRDS(dataFile)) + \
+       filter_genes.R + \
+       R(library(seqgendiff); out = poisthin(mat=t(counts), nsamp=nsamp, ngene=ngene, gselect=gselect, signal_params=signal_params, signal_fun=signal_fun, prop_null = prop_null, group_assign = group_assign, group_prop = group_prop, corvec = NULL)) + \
        R(X <- out$X; Y <- t(out$Y); beta <- out$beta) + \
        R(keep_genes <- filter_genes(Y, min_cell_detected=1)) + \
        R(Y <- Y[keep_genes,]; beta <- beta[keep_genes])
-  n1, n2: (50, 50)
-  ngene: 1000
-  prop_null: 0
-  gselect: "random"
-  libsize_factor: 0, 1, 2, 4
-  $Y: Y
-  $X: X
-  $beta: beta
-
-
-# Description:
-#   90% null genes, equal sample sizes across conditions
-# for evaluating power in relation to sample size
-data_poisthin_choose_betasd: R(counts = readRDS(dataFile)) + \
-       poisthin.R + \
-       R(out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
-       R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
   dataFile: "data/pbmc_counts.rds"
-  n1, n2: (50, 50), (100, 100), (250, 250)
   ngene: 1000
   prop_null: .9
   gselect: "random"
+  betamu: 0
   betasd: .5, 1, 2, 4
+  nsamp: 100
+  group_assign: "frac"
+  group_prop: .5
+  corvec: NULL
+  signal_fun: stats::rnorm
+  signal_params: list(mean=betamu, sd=betasd)
   $Y: Y
   $X: X
   $beta: beta
 
-
-# Description:
-#   90% null genes, scRNA-seq
-#   equal library sizes and sample sizes (across conditions)
-data_poisthin: R(counts = readRDS(dataFile)) + \
-       poisthin.R + \
-       R(out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
-       R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
-  dataFile: "data/pbmc_counts.rds"
-  n1, n2: (50, 50), (250, 250)
-  ngene: 1000
+# 90% null genes, scRNA-seq
+# equal library sizes and sample sizes (across conditions)
+data_poisthin(data_poisthin_choose_betasd):
   prop_null: .9, 1
-  gselect: "random"
   betasd: 1
-  $Y: Y
-  $X: X
-  $beta: beta
+  nsamp: 100, 500
 
 
-
-# Description:
-#   90% null genes, bulk RNA-seq
-#   equal library sizes and sample sizes (across conditions)
-data_poisthin_gtex: R(counts = readRDS(dataFile)) + \
-       poisthin.R + \
-       R(out = poisthin(mat=t(counts), nsamp=n1+n2, ngene=ngene, gselect=gselect, signal_params=list(mean=0, sd=betasd), prop_null = prop_null)) + \
-       R(X <- out$X; Y <- t(out$Y); beta <- out$beta)
+# 90% null genes, bulk RNA-seq
+# equal library sizes and sample sizes (across conditions)
+data_poisthin_gtex(data_poisthin_choose_betasd):
   dataFile: "data/gtex_lung.rds"
-  n1, n2: (5, 5), (10, 10), (50, 50), (150, 150)
-  ngene: 1000
+  nsamp: 10, 20, 100, 300
   prop_null: .9, 1
-  gselect: "random"
   betasd: 1
-  $Y: Y
-  $X: X
-  $beta: beta
+
+# null data with different library sizes
+data_poisthin_libsize(data_poisthin_choose_betasd):
+  prop_null: 0
+  betasd: 1
+  nsamp: 100
+  libsize_factor: 0, 1, 2, 4
+  signal_fun: function(n) rep(libsize_factor, n)
+  signal_params: list()
 
 
 
@@ -136,11 +119,10 @@ data_poisthin_gtex: R(counts = readRDS(dataFile)) + \
 
 
 # Method modules ------------------------------------------------------------------
-# For example, one can define method module groups as follows,
-#    run_methods_1: edger, deseq2, limma_voom, t_test_log2p1, t_test_log2p1cpm_quant, wilcoxon
-#    run_methods_2: edger, deseq2, limma_voom, t_test_log2p1, wilcoxon
+# Methods:
+#  edger, deseq2, limma_voom, t_test_log2p1, t_test_log2p1cpm_quant, wilcoxon
 
-
+# edger + count data
 deseq2: deseq2.R + \
       R(res <- deseq2(Y, X))
   Y: $Y
@@ -149,6 +131,7 @@ deseq2: deseq2.R + \
   $s_hat: res$se
   $pval: res$pval
 
+# edger + count data
 edger: edger.R + \
       R(res <- edger(Y, X))
   Y: $Y
@@ -156,8 +139,7 @@ edger: edger.R + \
   $log_fold_change_est: res$est
   $pval: res$pval
 
-#genes are rows
-#input is raw counts
+# glm poisson + count data
 glm_pois: glm.R + \
           R(res <- glm(Y, X, family);
             est <- res$Estimate;
@@ -182,7 +164,7 @@ glm_quasipois: glm.R + \
   $s_hat: se
   $pval: p
 
-
+# limma + voom + data transform log2s1
 limma_voom: limma_voom.R + \
        R(res <- limma_voom(Y, X))
    Y: $Y
@@ -192,14 +174,15 @@ limma_voom: limma_voom.R + \
    $s_hat: res$sebetahat
    $df: res$df
 
-mast: mast.R + \
-       R(res <- mast(Y, X))
-   Y: $Y
-   X: $X
-   $pval: res$pval
-   $log_fold_change_est: res$betahat
-   $s_hat: res$sebetahat
-   $df: res$df
+# to do: check mast input
+#mast: mast.R + \
+#       R(res <- mast(Y, X))
+#   Y: $Y
+#   X: $X
+#   $pval: res$pval
+#   $log_fold_change_est: res$betahat
+#   $s_hat: res$sebetahat
+#   $df: res$df
 
 sva_limma_voom: sva.R + limma_voom.R + \
     R(output_sva <- sva(Y, X)) +\
@@ -220,6 +203,8 @@ sva_limma_voom: sva.R + limma_voom.R + \
 #   $pval: res[2,]
 #   $log_fold_change_est: res[1,]
 
+
+# t-test + data transform log2(Y+1)
 t_test_log2p1: t_test.R + \
      R(log2_counts <- log2(Y+1)) + \
      R(res <- t_test(log2_counts, X))
@@ -228,6 +213,8 @@ t_test_log2p1: t_test.R + \
    $pval: res[2,]
    $log_fold_change_est: res[1,]
 
+
+# t-test + data transform log2(Y+1) then quantile normalize per gene
 t_test_log2p1_cpm_quant: t_test.R + normalize_counts.R + \
      R(log2cpm_qqnormed <- normalize_log2cpm(Y)) + \
      R(res <- t_test(log2cpm_qqnormed, X))
@@ -236,6 +223,7 @@ t_test_log2p1_cpm_quant: t_test.R + normalize_counts.R + \
    $pval: res[2,]
    $log_fold_change_est: res[1,]
 
+# wilcoxon test + count data
 wilcoxon: wilcoxon.R + \
         R(res <- wilcoxon(Y, X))
    Y: $Y
@@ -267,11 +255,13 @@ wilcoxon: wilcoxon.R + \
 # rank_pvals: qvalue
 # score_methods: type1error, qvalue, fdr, auc
 
+# rank pvalues: apply qvalue::qvalue() to transform pvalues to qvalues
 qvalue: qvalue.R + \
   R(qval <- get_qvalue(pval) )
   pval: $pval
   $qval: qval
 
+# type I error
 type1error: R(truth_vec <- beta !=0; pval_null <- pval[which(truth_vec ==F)]) +\
               R(out <- mean(pval_null < pval_thres, na.rm = TRUE) )
   pval_thres: .01
@@ -279,13 +269,15 @@ type1error: R(truth_vec <- beta !=0; pval_null <- pval[which(truth_vec ==F)]) +\
   beta: $beta
   $type_one_error: out
 
+# false discovery rate
 fdr: R(truth_vec <- beta !=0) + \
     R(fdr_est <- sum(qval < fdr_thres & !truth_vec, na.rm=TRUE)/sum(qval < fdr_thres, na.rm=TRUE))
-  fdr_thres: .05
+  fdr_thres: .01, .001
   beta: $beta
   qval: $qval
   $fdr_est: fdr_est
 
+# area under the false positive vs true positive curve
 auc: R(truth_vec <- beta !=0) + \
       R(library(pROC); if(sum(truth_vec==F) == length(truth_vec)) {auc_est <- NA} else {auc_est <- roc(response=truth_vec, predictor=qval)$auc})
     beta: $beta
