@@ -2,23 +2,19 @@ DSC:
   midway2:
     description: UChicago RCC cluster Midway 2
     address: localhost
+    queue_type: pbs
     paths:
       home: /home/joycehsiao
     queue_type: pbs
-    status_check_interval: 60
-    max_running_jobs: 60
-    max_cores: 40
-    max_walltime: "36:00:00"
-    max_mem: 64G
+    status_check_interval: 120
+    max_running_jobs: 10
     job_template: |
       #!/bin/bash
-      #SBATCH --time={walltime}
+      #SBATCH --time=6:00:00
       #{partition}
       #{account}
-      #SBATCH --nodes=1
-      #SBATCH --ntasks-per-node={cores}
-      #SBATCH --mem-per-cpu={mem//10**9}G
-      #SBATCH --job-name={job_name}
+      #SBATCH --cpu-per-task=10
+      #SBATCH --mem=20G
       #SBATCH --output={cur_dir}/.sos/{job_name}.stdout
       #SBATCH --error={cur_dir}/.sos/{job_name}.stderr
       cd {cur_dir}
@@ -35,29 +31,15 @@ DSC:
     address: joycehsiao@midway2.rcc.uchicago.edu
   stephenslab:
     based_on: midway2
-    max_cores: 28
-    max_mem: 128G
-    max_walltime: "10d"
     partition: "SBATCH --partition=mstephens"
     account: "SBATCH --account=pi-mstephens"
   giladlab:
     based_on: midway2
-    max_cores: 28
-    max_mem: 128G
-    max_walltime: "10d"
     partition: "SBATCH --partition=gilad"
     account: "SBATCH --account=pi-gilad"
 
 default:
   queue: giladlab
-  time_per_instance: 3m
-  instances_per_job: 30
-  n_cpu: 1
-  mem_per_cpu: 2G
-
-# module specific configurations
-run_methods:
-  time_per_instance: 6m
-  instances_per_job: 20
+  instances_per_job: 40
 
 
