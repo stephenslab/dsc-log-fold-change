@@ -8,9 +8,10 @@ output:
 
 Project website for benchmarking methods for single-cell DE methods. 
 
+
 ## Analysis
 
-### Sample size: 
+### Sample size 
 
 * Questions
     * Performances undering large sample size (e.g., 50/group, 250/group)
@@ -25,12 +26,17 @@ Project website for benchmarking methods for single-cell DE methods.
 * Simulations based on GTEx lung data
     * [Type I error](gtex_type1.html)    
     * [Power and false discovery rate](gtex_power.html)
-    
+
+## Data transformation
+
+* [In null datasets, assess the ability of methods to control type I error, including edger, deseq2, limma + voom, t-test + simple data transformation, and wilcoxon.](transform_null.html)
+
+
 
 ### Data we used 
 
-* [README](../dsc/data/README.md)
-* 10x Genomics PBMC dataset
+* [README](dsc/data/README.md)
+* 10x Genomics dataset: ~3K PBMC samples
 * GTEx lung samples
 
 ---
