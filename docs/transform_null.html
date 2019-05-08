@@ -349,10 +349,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreeeafe1738c1fc80586d60d4daa81cfe60e1044f3btargetblankeafe173a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/eafe1738c1fc80586d60d4daa81cfe60e1044f3b" target="_blank">eafe173</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreedd437668279190aad1f8fe8e00c64055b9009668targetblankdd43766a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/dd437668279190aad1f8fe8e00c64055b9009668" target="_blank">dd43766</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreeeafe1738c1fc80586d60d4daa81cfe60e1044f3btargetblankeafe173a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreedd437668279190aad1f8fe8e00c64055b9009668targetblankdd43766a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -373,9 +373,7 @@ Untracked files:
 
 Unstaged changes:
     Modified:   analysis/eval_initial.Rmd
-    Modified:   dsc/benchmark.sh
     Modified:   dsc/modules/limma_voom.R
-    Modified:   dsc/modules/transform_data.R
 
 </code></pre>
 <p>
@@ -414,6 +412,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/dd437668279190aad1f8fe8e00c64055b9009668/analysis/transform_null.Rmd" target="_blank">dd43766</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-08
+</td>
+<td>
+update results
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/a4c55012d3334d1c248052982c60151cb14306ec/docs/transform_null.html" target="_blank">a4c5501</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-08
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -537,6 +569,9 @@ transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&qu
                             &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
 de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;t_test&quot;)
 
+transform_methods_list &lt;- c(&quot;log2_none_p1&quot;)
+de_methods_list &lt;- c(&quot;t_test&quot;)
+
 out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
 
   data_obj &lt;- readRDS(file = paste0(&quot;output/transform_null.Rmd/data_obj_&quot;,i,&quot;.rds&quot;))
@@ -623,7 +658,65 @@ saveRDS(out, file = &quot;output/transform_null.Rmd/type1error.rds&quot;)</code>
 <pre class="r"><code>#alpha &lt;- .001
 out &lt;- readRDS(file = &quot;output/transform_null.Rmd/type1error.rds&quot;)
 
+levels(out$transform_method)</code></pre>
+<pre><code>[1] &quot;edger&quot;                &quot;deseq2&quot;               &quot;limma_voom&quot;          
+[4] &quot;log2_none_p1&quot;         &quot;log2_libsum_p1&quot;       &quot;log2_libscale_TMM_p1&quot;
+[7] &quot;log2_libscale_RLE_p1&quot; &quot;counts_pearsons&quot;     </code></pre>
+<pre class="r"><code>labels_methods &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;ttest_log2_none_p1&quot;,
+            &quot;ttest_log2_libsum_p1&quot;, &quot;ttest_log2_libscale_TMM_p1&quot;, 
+            &quot;ttest_log2_libscale_RLE_p1&quot;, &quot;ttest_counts_pearsons&quot;)
+
+
 out %&gt;% #filter(n1==50) %&gt;% 
+    group_by(de_method, transform_method) %&gt;%
+    ggplot(., aes(x=transform_method, y=type1error_001, col=transform_method)) +
+#        facet_wrap(~de_method) +
+        geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .001&quot;) +
+        geom_hline(yintercept = .001, col=&quot;gray50&quot;) +
+        ylab(&quot;Type I error&quot;) +
+      scale_x_discrete(position = &quot;top&quot;,
+                       labels=labels_methods) +
+       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
+       stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
+<p><img src="figure/transform_null.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-1">
+Past versions of unnamed-chunk-3-1.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-3-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/a4c55012d3334d1c248052982c60151cb14306ec/docs/figure/transform_null.Rmd/unnamed-chunk-3-1.png" target="_blank">a4c5501</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-08
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
     group_by(de_method, transform_method) %&gt;%
     ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
 #        facet_wrap(~de_method) +
@@ -631,34 +724,47 @@ out %&gt;% #filter(n1==50) %&gt;%
         geom_hline(yintercept = .01, col=&quot;gray50&quot;) +
         ylab(&quot;Type I error&quot;) +
       scale_x_discrete(position = &quot;top&quot;,
-                       labels=levels(out$transform_method)) +
-      # scale_color_manual(values=cols) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1))</code></pre>
-<p><img src="figure/transform_null.Rmd/unnamed-chunk-3-1.png" width="1152" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
-    group_by(de_method, transform_method) %&gt;%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
-#        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .005&quot;) +
-        geom_hline(yintercept = .005, col=&quot;gray50&quot;) +
-        ylab(&quot;Type I error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=levels(out$transform_method)) +
-      # scale_color_manual(values=cols) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1))</code></pre>
-<p><img src="figure/transform_null.Rmd/unnamed-chunk-3-2.png" width="1152" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
-    group_by(de_method, transform_method) %&gt;%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
-#        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .001&quot;) +
-        geom_hline(yintercept = .001, col=&quot;gray50&quot;) +
-        ylab(&quot;Type I error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=levels(out$transform_method)) +
-      # scale_color_manual(values=cols) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1))</code></pre>
-<p><img src="figure/transform_null.Rmd/unnamed-chunk-3-3.png" width="1152" style="display: block; margin: auto;" /></p>
+                       labels=labels_methods) +
+       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
+       stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
+<p><img src="figure/transform_null.Rmd/unnamed-chunk-3-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-2">
+Past versions of unnamed-chunk-3-2.png
+</button>
+</p>
+<div id="fig-unnamed-chunk-3-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/a4c55012d3334d1c248052982c60151cb14306ec/docs/figure/transform_null.Rmd/unnamed-chunk-3-2.png" target="_blank">a4c5501</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-08
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
