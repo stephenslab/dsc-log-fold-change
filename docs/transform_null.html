@@ -246,7 +246,8 @@ div.section {
 <li><a href="#introduction">Introduction</a></li>
 <li><a href="#required-packages">Required packages</a></li>
 <li><a href="#simulate-data-and-run-methods">Simulate data and run methods</a></li>
-<li><a href="#analysis">Analysis</a></li>
+<li><a href="#type-i-error-distribution">Type I error distribution</a></li>
+<li><a href="#p-value-distribution">p-value distribution</a></li>
 </ul>
 </div>
 
@@ -349,10 +350,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreedd437668279190aad1f8fe8e00c64055b9009668targetblankdd43766a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/dd437668279190aad1f8fe8e00c64055b9009668" target="_blank">dd43766</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree70a66d1b238b0e00aa2ae8445bdf5fe529e8607ftargetblank70a66d1a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/70a66d1b238b0e00aa2ae8445bdf5fe529e8607f" target="_blank">70a66d1</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetreedd437668279190aad1f8fe8e00c64055b9009668targetblankdd43766a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree70a66d1b238b0e00aa2ae8445bdf5fe529e8607ftargetblank70a66d1a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -363,6 +364,7 @@ Ignored files:
     Ignored:    .Rproj.user/
     Ignored:    .sos/
     Ignored:    analysis/.sos/
+    Ignored:    analysis/figure/
     Ignored:    dsc/.sos/
     Ignored:    dsc/benchmark/
     Ignored:    dsc/dsc_test/.sos/
@@ -412,6 +414,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/70a66d1b238b0e00aa2ae8445bdf5fe529e8607f/analysis/transform_null.Rmd" target="_blank">70a66d1</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-08
+</td>
+<td>
+update results
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/7489eadba2d2171d86d984d163db74ff3ac266fc/docs/transform_null.html" target="_blank">7489ead</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-08
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -512,29 +548,17 @@ downstream effects of data transformation methods in null datasets: initial asse
 <li>100 cells (50 vs 50)</li>
 <li>1K genes randomly drawn</li>
 <li>100% null genes</li>
-<li>20 simulated datasets</li>
+<li>50 simulated datasets</li>
 </ul>
 <hr />
 </div>
 <div id="required-packages" class="section level2">
 <h2>Required packages</h2>
-<pre class="r"><code>knitr::opts_chunk$set(warning=F, message=F)
-
-library(dscrutils)
-library(tidyverse)</code></pre>
-<pre><code>── Attaching packages ───────────────────────────────────────────────────────── tidyverse 1.2.1 ──</code></pre>
-<pre><code>✔ ggplot2 3.1.0       ✔ purrr   0.3.2  
-✔ tibble  2.1.1       ✔ dplyr   0.8.0.1
-✔ tidyr   0.8.3       ✔ stringr 1.3.1  
-✔ readr   1.3.1       ✔ forcats 0.3.0  </code></pre>
-<pre><code>── Conflicts ──────────────────────────────────────────────────────────── tidyverse_conflicts() ──
-✖ dplyr::filter() masks stats::filter()
-✖ dplyr::lag()    masks stats::lag()</code></pre>
+<pre class="r"><code>knitr::opts_chunk$set(warning=F, message=F)</code></pre>
 </div>
 <div id="simulate-data-and-run-methods" class="section level2">
 <h2>Simulate data and run methods</h2>
-<pre class="r"><code>#methods &lt;- c(&quot;limma_voom&quot;, &quot;sva_ttest&quot;, &quot;t_test&quot;)
-
+<pre class="r"><code>library(tidyverse)
 library(seqgendiff)
 library(sctransform)
 #source(&quot;dsc/modules/poisthin.R&quot;)
@@ -544,9 +568,8 @@ source(&quot;dsc/modules/t_test.R&quot;)
 source(&quot;dsc/modules/wilcoxon.R&quot;)
 source(&quot;dsc/modules/limma_voom.R&quot;)
 source(&quot;dsc/modules/edger.R&quot;)
-source(&quot;dsc/modules/deseq2.R&quot;)
-
-counts &lt;- readRDS(&quot;dsc/data/pbmc_counts.rds&quot;)
+source(&quot;dsc/modules/deseq2.R&quot;)</code></pre>
+<pre class="r"><code>counts &lt;- readRDS(&quot;dsc/data/pbmc_counts.rds&quot;)
 nsamp &lt;- 100
 ngene &lt;- 1000
 prop_null &lt;- 0
@@ -569,8 +592,8 @@ transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&qu
                             &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
 de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;t_test&quot;)
 
-transform_methods_list &lt;- c(&quot;log2_none_p1&quot;)
-de_methods_list &lt;- c(&quot;t_test&quot;)
+# transform_methods_list &lt;- c(&quot;log2_none_p1&quot;)
+# de_methods_list &lt;- c(&quot;t_test&quot;)
 
 out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
 
@@ -653,8 +676,8 @@ out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
 
 saveRDS(out, file = &quot;output/transform_null.Rmd/type1error.rds&quot;)</code></pre>
 </div>
-<div id="analysis" class="section level2">
-<h2>Analysis</h2>
+<div id="type-i-error-distribution" class="section level2">
+<h2>Type I error distribution</h2>
 <pre class="r"><code>#alpha &lt;- .001
 out &lt;- readRDS(file = &quot;output/transform_null.Rmd/type1error.rds&quot;)
 
@@ -678,44 +701,7 @@ out %&gt;% #filter(n1==50) %&gt;%
                        labels=labels_methods) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-1">
-Past versions of unnamed-chunk-3-1.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-3-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/a4c55012d3334d1c248052982c60151cb14306ec/docs/figure/transform_null.Rmd/unnamed-chunk-3-1.png" target="_blank">a4c5501</a>
-</td>
-<td>
-Joyce Hsiao
-</td>
-<td>
-2019-05-08
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/transform_null.Rmd/type1error-1.png" width="672" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
     group_by(de_method, transform_method) %&gt;%
     ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
@@ -727,44 +713,93 @@ Joyce Hsiao
                        labels=labels_methods) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/unnamed-chunk-3-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-unnamed-chunk-3-2">
-Past versions of unnamed-chunk-3-2.png
-</button>
-</p>
-<div id="fig-unnamed-chunk-3-2" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/a4c55012d3334d1c248052982c60151cb14306ec/docs/figure/transform_null.Rmd/unnamed-chunk-3-2.png" target="_blank">a4c5501</a>
-</td>
-<td>
-Joyce Hsiao
-</td>
-<td>
-2019-05-08
-</td>
-</tr>
-</tbody>
-</table>
+<p><img src="figure/transform_null.Rmd/type1error-2.png" width="672" style="display: block; margin: auto;" /></p>
 </div>
-</div>
+<div id="p-value-distribution" class="section level2">
+<h2>p-value distribution</h2>
+<pre class="r"><code>out &lt;- readRDS(file = &quot;output/transform_null.Rmd/type1error.rds&quot;)
+
+levels(out$transform_method)
+labels_methods &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;ttest_log2_none_p1&quot;,
+            &quot;ttest_log2_libsum_p1&quot;, &quot;ttest_log2_libscale_TMM_p1&quot;, 
+            &quot;ttest_log2_libscale_RLE_p1&quot;, &quot;ttest_counts_pearsons&quot;)
+
+
+# chose nsim=40
+out[out$nsim==40,]
+
+i &lt;- 40
+data_obj &lt;- readRDS(file = paste0(&quot;output/transform_null.Rmd/data_obj_&quot;,i,&quot;.rds&quot;))
+Y &lt;- t(data_obj$Y)
+X &lt;- data_obj$X
+keep_genes &lt;- filter_genes(Y, min_cell_detected=5)
+Y &lt;- Y[keep_genes,]
+
+transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&quot;, &quot;log2_libscale_TMM_p1&quot;, 
+                            &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
+de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;t_test&quot;)
+
+  
+foo_m &lt;- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
+
+if (de_methods_list[j] == &quot;edger&quot;) {
+    message(&quot;edger&quot;)
+    res &lt;- edger(Y=Y, X=X)
+    pvals &lt;- res$pval
+    return(data.frame(pvals=pvals,
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j]))
+} 
+if (de_methods_list[j] == &quot;deseq2&quot;) {
+    res &lt;- deseq2(Y=Y, X=X)
+    pvals &lt;- res$pval
+    return(data.frame(pvals=pvals,
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j]))
+} 
+if (de_methods_list[j] == &quot;limma_voom&quot;) {
+    res &lt;- limma_voom(Y=Y, X=X)
+    pvals &lt;- res$pval
+    return(data.frame(pvals=pvals,
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j]))
+} 
+
+if (de_methods_list[j] == &quot;t_test&quot;) {
+    foo_t &lt;- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
+        if (transform_methods_list[k] == &quot;log2_none_p1&quot;) {
+        transformed_Y &lt;- transform_data(Y, libscale_method = &quot;none&quot;, 
+                                        log=&quot;log2&quot;, pseudo_count=1)
+        }
+        if (transform_methods_list[k] == &quot;log2_libsum_p1&quot;) {
+        transformed_Y &lt;- transform_data(Y, libscale_method = &quot;sum&quot;, 
+                                        log=&quot;log2&quot;, pseudo_count=1)
+        }
+        if (transform_methods_list[k] == &quot;log2_libscale_TMM_p1&quot;) {
+        transformed_Y &lt;- transform_data(Y, libscale_method = &quot;TMM&quot;, 
+                                        log=&quot;log2&quot;, pseudo_count=1)
+        }
+        if (transform_methods_list[k] == &quot;log2_libscale_RLE_p1&quot;) {
+        transformed_Y &lt;- transform_data(Y, libscale_method = &quot;RLE&quot;, 
+                                        log=&quot;log2&quot;, pseudo_count=1)
+        }
+        if (transform_methods_list[k] == &quot;counts_pearsons&quot;) {
+        transformed_Y &lt;- transform_data(Y, libscale_method = &quot;pearsons_residual&quot;, 
+                                        log=&quot;none&quot;, pseudo_count=1)
+        }
+        res &lt;- t_test(transformed_Y, X)
+        pvals &lt;- res[2,]
+        return(data.frame(pvals=pvals,
+                          transform_method = transform_methods_list[k],
+                          de_method = de_methods_list[j]))
+    }) )
+    return(foo_t)      
+  }
+}) )
+
+ggplot(foo_m, aes(x=pvals, fill=transform_method)) +
+  geom_histogram() +
+  facet_wrap(~transform_method)</code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -792,24 +827,32 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 other attached packages:
- [1] forcats_0.3.0   stringr_1.3.1   dplyr_0.8.0.1   purrr_0.3.2    
- [5] readr_1.3.1     tidyr_0.8.3     tibble_2.1.1    ggplot2_3.1.0  
- [9] tidyverse_1.2.1 dscrutils_0.3.8
+ [1] sctransform_0.2.0 seqgendiff_0.1.0  forcats_0.3.0    
+ [4] stringr_1.3.1     dplyr_0.8.0.1     purrr_0.3.2      
+ [7] readr_1.3.1       tidyr_0.8.3       tibble_2.1.1     
+[10] ggplot2_3.1.0     tidyverse_1.2.1  
 
 loaded via a namespace (and not attached):
- [1] Rcpp_1.0.1       cellranger_1.1.0 plyr_1.8.4       compiler_3.5.1  
- [5] pillar_1.3.1     git2r_0.23.0     workflowr_1.3.0  tools_3.5.1     
- [9] digest_0.6.18    lubridate_1.7.4  jsonlite_1.6     evaluate_0.12   
-[13] nlme_3.1-137     gtable_0.2.0     lattice_0.20-38  pkgconfig_2.0.2 
-[17] rlang_0.3.4      cli_1.0.1        rstudioapi_0.10  yaml_2.2.0      
-[21] haven_1.1.2      withr_2.1.2      xml2_1.2.0       httr_1.3.1      
-[25] knitr_1.20       hms_0.4.2        generics_0.0.2   fs_1.2.6        
-[29] rprojroot_1.3-2  grid_3.5.1       tidyselect_0.2.5 glue_1.3.0      
-[33] R6_2.4.0         readxl_1.1.0     rmarkdown_1.10   modelr_0.1.2    
-[37] magrittr_1.5     whisker_0.3-2    backports_1.1.2  scales_1.0.0    
-[41] htmltools_0.3.6  rvest_0.3.2      assertthat_0.2.0 colorspace_1.3-2
-[45] labeling_0.3     stringi_1.2.4    lazyeval_0.2.1   munsell_0.5.0   
-[49] broom_0.5.1      crayon_1.3.4    </code></pre>
+ [1] tidyselect_0.2.5   listenv_0.7.0      reshape2_1.4.3    
+ [4] haven_1.1.2        lattice_0.20-38    colorspace_1.3-2  
+ [7] generics_0.0.2     htmltools_0.3.6    yaml_2.2.0        
+[10] rlang_0.3.4        pillar_1.3.1       glue_1.3.0        
+[13] withr_2.1.2        modelr_0.1.2       readxl_1.1.0      
+[16] plyr_1.8.4         munsell_0.5.0      gtable_0.2.0      
+[19] workflowr_1.3.0    cellranger_1.1.0   rvest_0.3.2       
+[22] future_1.12.0      codetools_0.2-15   evaluate_0.12     
+[25] labeling_0.3       knitr_1.20         parallel_3.5.1    
+[28] broom_0.5.1        Rcpp_1.0.1         scales_1.0.0      
+[31] backports_1.1.2    jsonlite_1.6       fs_1.2.6          
+[34] gridExtra_2.3      hms_0.4.2          digest_0.6.18     
+[37] stringi_1.2.4      grid_3.5.1         rprojroot_1.3-2   
+[40] cli_1.0.1          tools_3.5.1        magrittr_1.5      
+[43] lazyeval_0.2.1     crayon_1.3.4       whisker_0.3-2     
+[46] future.apply_1.2.0 pkgconfig_2.0.2    MASS_7.3-51.1     
+[49] Matrix_1.2-17      xml2_1.2.0         lubridate_1.7.4   
+[52] assertthat_0.2.0   rmarkdown_1.10     httr_1.3.1        
+[55] rstudioapi_0.10    globals_0.12.4     R6_2.4.0          
+[58] nlme_3.1-137       git2r_0.23.0       compiler_3.5.1    </code></pre>
 </div>
 </div>
 
