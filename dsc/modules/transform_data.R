@@ -20,6 +20,11 @@ transform_data <- function(Y, pseudo_count = 1, log=c("none", "log2", "log10"),
       libsize_normed <- libsize*libscale_factors
       transformed_Y <- log2(10e+05 * t(t(Y)/libsize_normed) + pseudo_count)
     }
+    if (libscale_method == "RLE") {
+      libscale_factors <- edgeR::calcNormFactors(Y, method = libscale_method)
+      libsize_normed <- libsize*libscale_factors
+      transformed_Y <- log2(10e+05 * t(t(Y)/libsize_normed) + pseudo_count)
+    }
   }
   if (log=="none" & libscale_method == "pearsons_residual") {
 #      library(sctransform)
@@ -28,11 +33,16 @@ transform_data <- function(Y, pseudo_count = 1, log=c("none", "log2", "log10"),
                                   show_progress = FALSE)
       transformed_Y <- vst_out$y
   }
-  if (log=="none" & libscale_method == "TMM") {
-    libscale_factors <- edgeR::calcNormFactors(Y, method = libscale_method)
-    libsize_normed <- libsize*libscale_factors
-    transformed_Y <- t(t(Y)/libsize_normed)
-  }
+  # if (log=="none" & libscale_method == "TMM") {
+  #   libscale_factors <- edgeR::calcNormFactors(Y, method = libscale_method)
+  #   libsize_normed <- libsize*libscale_factors
+  #   transformed_Y <- t(t(Y)/libsize_normed)
+  # }
+  # if (log=="none" & libscale_method == "RLE") {
+  #   libscale_factors <- edgeR::calcNormFactors(Y, method = libscale_method)
+  #   libsize_normed <- libsize*libscale_factors
+  #   transformed_Y <- t(t(Y)/libsize_normed)
+  # }
 
   return(transformed_Y)
 }

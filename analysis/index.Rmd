@@ -35,7 +35,7 @@ Project website for benchmarking methods for single-cell DE methods.
 
 ### Data we used 
 
-* [README](dsc/data/README.md)
+* [README](https://github.com/stephenslab/dsc-log-fold-change/blob/master/dsc/data/README.md)
 * 10x Genomics dataset: ~3K PBMC samples
 * GTEx lung samples
 
