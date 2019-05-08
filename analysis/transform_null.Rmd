@@ -75,7 +75,7 @@ Data simulation parameters:
 * 100 cells (50 vs 50)
 * 1K genes randomly drawn
 * 100% null genes
-* 20 simulated datasets
+* 50 simulated datasets
 
 
 ---
@@ -84,18 +84,14 @@ Data simulation parameters:
 
 ```{r}
 knitr::opts_chunk$set(warning=F, message=F)
-
-library(dscrutils)
-library(tidyverse)
 ```
 
 
 ## Simulate data and run methods
 
-```{r, warning=F, message=F, eval=F}
+```{r load_packages, warning=F, message=F, eval=T}
 
-#methods <- c("limma_voom", "sva_ttest", "t_test")
-
+library(tidyverse)
 library(seqgendiff)
 library(sctransform)
 #source("dsc/modules/poisthin.R")
@@ -106,7 +102,9 @@ source("dsc/modules/wilcoxon.R")
 source("dsc/modules/limma_voom.R")
 source("dsc/modules/edger.R")
 source("dsc/modules/deseq2.R")
+```
 
+```{r simulate_data, warning=F, message=F, eval=F}
 counts <- readRDS("dsc/data/pbmc_counts.rds")
 nsamp <- 100
 ngene <- 1000
@@ -130,8 +128,8 @@ transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM
                             "log2_libscale_RLE_p1", "counts_pearsons")
 de_methods_list <- c("edger", "deseq2", "limma_voom", "t_test")
 
-transform_methods_list <- c("log2_none_p1")
-de_methods_list <- c("t_test")
+# transform_methods_list <- c("log2_none_p1")
+# de_methods_list <- c("t_test")
 
 out <- do.call(rbind, lapply(1:nsim, function(i) {
 
@@ -217,10 +215,10 @@ saveRDS(out, file = "output/transform_null.Rmd/type1error.rds")
 
 
 
-## Analysis
+## Type I error distribution
 
 
-```{r, eval=T}
+```{r type1error, eval=T}
 #alpha <- .001
 out <- readRDS(file = "output/transform_null.Rmd/type1error.rds")
 
@@ -256,4 +254,94 @@ out %>% #filter(n1==50) %>%
 
 ```
 
+
+
+## p-value distribution
+
+```{r pval_distribution, eval=F}
+out <- readRDS(file = "output/transform_null.Rmd/type1error.rds")
+
+levels(out$transform_method)
+labels_methods <- c("edger", "deseq2", "limma_voom", "ttest_log2_none_p1",
+            "ttest_log2_libsum_p1", "ttest_log2_libscale_TMM_p1", 
+            "ttest_log2_libscale_RLE_p1", "ttest_counts_pearsons")
+
+
+# chose nsim=40
+out[out$nsim==40,]
+
+i <- 40
+data_obj <- readRDS(file = paste0("output/transform_null.Rmd/data_obj_",i,".rds"))
+Y <- t(data_obj$Y)
+X <- data_obj$X
+keep_genes <- filter_genes(Y, min_cell_detected=5)
+Y <- Y[keep_genes,]
+
+transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM_p1", 
+                            "log2_libscale_RLE_p1", "counts_pearsons")
+de_methods_list <- c("edger", "deseq2", "limma_voom", "t_test")
+
+  
+foo_m <- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
+
+if (de_methods_list[j] == "edger") {
+    message("edger")
+    res <- edger(Y=Y, X=X)
+    pvals <- res$pval
+    return(data.frame(pvals=pvals,
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j]))
+} 
+if (de_methods_list[j] == "deseq2") {
+    res <- deseq2(Y=Y, X=X)
+    pvals <- res$pval
+    return(data.frame(pvals=pvals,
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j]))
+} 
+if (de_methods_list[j] == "limma_voom") {
+    res <- limma_voom(Y=Y, X=X)
+    pvals <- res$pval
+    return(data.frame(pvals=pvals,
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j]))
+} 
+
+if (de_methods_list[j] == "t_test") {
+    foo_t <- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
+        if (transform_methods_list[k] == "log2_none_p1") {
+        transformed_Y <- transform_data(Y, libscale_method = "none", 
+                                        log="log2", pseudo_count=1)
+        }
+        if (transform_methods_list[k] == "log2_libsum_p1") {
+        transformed_Y <- transform_data(Y, libscale_method = "sum", 
+                                        log="log2", pseudo_count=1)
+        }
+        if (transform_methods_list[k] == "log2_libscale_TMM_p1") {
+        transformed_Y <- transform_data(Y, libscale_method = "TMM", 
+                                        log="log2", pseudo_count=1)
+        }
+        if (transform_methods_list[k] == "log2_libscale_RLE_p1") {
+        transformed_Y <- transform_data(Y, libscale_method = "RLE", 
+                                        log="log2", pseudo_count=1)
+        }
+        if (transform_methods_list[k] == "counts_pearsons") {
+        transformed_Y <- transform_data(Y, libscale_method = "pearsons_residual", 
+                                        log="none", pseudo_count=1)
+        }
+        res <- t_test(transformed_Y, X)
+        pvals <- res[2,]
+        return(data.frame(pvals=pvals,
+                          transform_method = transform_methods_list[k],
+                          de_method = de_methods_list[j]))
+    }) )
+    return(foo_t)      
+  }
+}) )
+
+ggplot(foo_m, aes(x=pvals, fill=transform_method)) +
+  geom_histogram() +
+  facet_wrap(~transform_method)
+
+```
 
