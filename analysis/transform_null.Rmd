@@ -130,6 +130,9 @@ transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM
                             "log2_libscale_RLE_p1", "counts_pearsons")
 de_methods_list <- c("edger", "deseq2", "limma_voom", "t_test")
 
+transform_methods_list <- c("log2_none_p1")
+de_methods_list <- c("t_test")
+
 out <- do.call(rbind, lapply(1:nsim, function(i) {
 
   data_obj <- readRDS(file = paste0("output/transform_null.Rmd/data_obj_",i,".rds"))
@@ -217,10 +220,28 @@ saveRDS(out, file = "output/transform_null.Rmd/type1error.rds")
 ## Analysis
 
 
-```{r, fig.width=12, eval=T}
+```{r, eval=T}
 #alpha <- .001
 out <- readRDS(file = "output/transform_null.Rmd/type1error.rds")
 
+levels(out$transform_method)
+labels_methods <- c("edger", "deseq2", "limma_voom", "ttest_log2_none_p1",
+            "ttest_log2_libsum_p1", "ttest_log2_libscale_TMM_p1", 
+            "ttest_log2_libscale_RLE_p1", "ttest_counts_pearsons")
+
+
+out %>% #filter(n1==50) %>% 
+    group_by(de_method, transform_method) %>%
+    ggplot(., aes(x=transform_method, y=type1error_001, col=transform_method)) +
+#        facet_wrap(~de_method) +
+        geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .001") +
+        geom_hline(yintercept = .001, col="gray50") +
+        ylab("Type I error") +
+      scale_x_discrete(position = "top",
+                       labels=labels_methods) +
+       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
+       stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
+  
 out %>% #filter(n1==50) %>% 
     group_by(de_method, transform_method) %>%
     ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
@@ -229,34 +250,10 @@ out %>% #filter(n1==50) %>%
         geom_hline(yintercept = .01, col="gray50") +
         ylab("Type I error") +
       scale_x_discrete(position = "top",
-                       labels=levels(out$transform_method)) +
-      # scale_color_manual(values=cols) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1))
+                       labels=labels_methods) +
+       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
+       stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 
-
-out %>% #filter(n1==50) %>% 
-    group_by(de_method, transform_method) %>%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
-#        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .005") +
-        geom_hline(yintercept = .005, col="gray50") +
-        ylab("Type I error") +
-      scale_x_discrete(position = "top",
-                       labels=levels(out$transform_method)) +
-      # scale_color_manual(values=cols) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1))
-
-out %>% #filter(n1==50) %>% 
-    group_by(de_method, transform_method) %>%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
-#        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .001") +
-        geom_hline(yintercept = .001, col="gray50") +
-        ylab("Type I error") +
-      scale_x_discrete(position = "top",
-                       labels=levels(out$transform_method)) +
-      # scale_color_manual(values=cols) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1))
 ```
 
 
