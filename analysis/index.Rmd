@@ -29,8 +29,7 @@ Project website for benchmarking methods for single-cell DE methods.
 
 ## Data transformation
 
-* [In null datasets, assess the ability of methods to control type I error, including edger, deseq2, limma + voom, t-test + simple data transformation, and wilcoxon.](transform_null.html)
-
+* [Type I error of various data transformation methods in null datasets.](transform_null.html)
 
 
 ### Data we used 
