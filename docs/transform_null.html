@@ -262,7 +262,7 @@ div.section {
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2019-05-09
+<strong>Last updated:</strong> 2019-05-10
 </p>
 <p>
 <strong>Checks:</strong> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 6 <span class="glyphicon glyphicon-exclamation-sign text-danger" aria-hidden="true"></span> 0
@@ -341,10 +341,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree9881ccac37a5df70a3dd97bb3840a6c981c68c9ctargetblank9881ccaa"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/9881ccac37a5df70a3dd97bb3840a6c981c68c9c" target="_blank">9881cca</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree5d43eb7674e12a4f95b9e355bd26a2c0139930fetargetblank5d43eb7a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/5d43eb7674e12a4f95b9e355bd26a2c0139930fe" target="_blank">5d43eb7</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree9881ccac37a5df70a3dd97bb3840a6c981c68c9ctargetblank9881ccaa" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree5d43eb7674e12a4f95b9e355bd26a2c0139930fetargetblank5d43eb7a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -357,15 +357,15 @@ Ignored files:
     Ignored:    analysis/.sos/
     Ignored:    dsc/.sos/
     Ignored:    dsc/benchmark/
+    Ignored:    dsc/data/filtered_gene_bc_matrices/
     Ignored:    dsc/dsc_test/.sos/
     Ignored:    output/
-
-Untracked files:
-    Untracked:  analysis/eval_initial_type1_libsize.Rmd
 
 Unstaged changes:
     Modified:   analysis/eval_initial.Rmd
     Modified:   analysis/index.Rmd
+    Modified:   dsc/benchmark.dsc
+    Modified:   dsc/benchmark.sh
     Modified:   dsc/modules/limma_voom.R
 
 </code></pre>
@@ -405,6 +405,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/5d43eb7674e12a4f95b9e355bd26a2c0139930fe/analysis/transform_null.Rmd" target="_blank">5d43eb7</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+<td>
+update results
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/5c509febc60baae0a0e99bca5a138e198ba71586/docs/transform_null.html" target="_blank">5c509fe</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-09
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -554,9 +588,10 @@ downstream effects of data transformation methods in null datasets: initial asse
 <hr />
 <p>Pipelines compared:</p>
 <ul>
-<li>t-test + all 5 data transformation methods listed above</li>
 <li>DEseq2: count data + RLE transformation</li>
 <li>edgeR: count data + TMM transformation</li>
+<li>limma_voom + data transformation 1-4</li>
+<li>t-test + all 5 data transformation methods listed above</li>
 </ul>
 <hr />
 <p>More about <code>counts_pearson</code>:</p>
@@ -590,13 +625,188 @@ source(&quot;dsc/modules/t_test.R&quot;)
 source(&quot;dsc/modules/wilcoxon.R&quot;)
 source(&quot;dsc/modules/limma_voom.R&quot;)
 source(&quot;dsc/modules/edger.R&quot;)
-source(&quot;dsc/modules/deseq2.R&quot;)</code></pre>
+source(&quot;dsc/modules/deseq2.R&quot;)
+source(&quot;dsc/modules/sva.R&quot;)
+
+run_methods &lt;- function(data_obj, nsim, verbose=F) {
+  
+  Y &lt;- t(data_obj$Y)
+  X &lt;- data_obj$X
+  beta &lt;- data_obj$beta
+  keep_genes &lt;- filter_genes(Y, min_cell_detected=5)
+  Y &lt;- Y[keep_genes,]
+  beta &lt;- beta[keep_genes]
+  
+  foo_m &lt;- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
+
+  if (de_methods_list[j] == &quot;edger&quot;) {
+    if (verbose) message(&quot;edger&quot;)
+      res &lt;- edger(Y=Y, X=X)
+      pvals &lt;- res$pval
+      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
+                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
+                        mse = mean((res$est - beta)^2, na.rm=T),
+                        transform_method = de_methods_list[j],
+                        de_method = de_methods_list[j],
+                        nsim = nsim))
+  } 
+  if (de_methods_list[j] == &quot;deseq2&quot;) {
+      if (verbose) message(&quot;deseq2&quot;)
+      res &lt;- deseq2(Y=Y, X=X)
+      pvals &lt;- res$pval
+      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
+                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
+                        mse = mean((res$est - beta)^2, na.rm=T),
+                        transform_method = de_methods_list[j],
+                        de_method = de_methods_list[j],
+                        nsim = nsim))
+  } 
+  if (de_methods_list[j] == &quot;limma&quot;) {
+      if (verbose) message(&quot;limma&quot;)
+      foo_l &lt;- do.call(rbind, lapply(1:(length(transform_methods_list)-1), function(k) {
+          if (transform_methods_list[k] == &quot;log2_none_p1&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;none&quot;, 
+                                          log=&quot;log2&quot;, pseudo_count=1)
+          }
+          if (transform_methods_list[k] == &quot;log2_libsum_p1&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;sum&quot;, 
+                                          log=&quot;log2&quot;, pseudo_count=1)
+          }
+          if (transform_methods_list[k] == &quot;log2_libscale_TMM_p1&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;TMM&quot;, 
+                                          log=&quot;log2&quot;, pseudo_count=1)
+          }
+          if (transform_methods_list[k] == &quot;log2_libscale_RLE_p1&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;RLE&quot;, 
+                                          log=&quot;log2&quot;, pseudo_count=1)
+          }
+          if (sum(is.na(transformed_Y))==nrow(transformed_Y)*ncol(transformed_Y)) {
+          return(data.frame(type1error_01=NA,
+                            type1error_001=NA,
+                            mse=NA,
+                            transform_method = transform_methods_list[k],
+                            de_method = de_methods_list[j],
+                            nsim = nsim))
+          } else {
+          fit &lt;- lmFit(transformed_Y,design=X)
+          fit.ebayes &lt;- eBayes(fit)
+          pvals &lt;- fit.ebayes$p.value[,2]
+          return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
+                            type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
+                            mse=mean((fit.ebayes$coefficients[,2]-beta)^2,na.rm=T),
+                            transform_method = transform_methods_list[k],
+                            de_method = de_methods_list[j],
+                            nsim = nsim))
+          }
+      }) )
+      return(foo_l)      
+    }
+  if (de_methods_list[j] == &quot;limma_voom&quot;) {
+      if (verbose) message(&quot;limma_voom&quot;)
+      res &lt;- limma_voom(Y=Y, X=X)
+      pvals &lt;- res$pvalue
+      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
+                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
+                        mse=mean((res$betahat-beta)^2,na.rm=T),
+                        transform_method = de_methods_list[j],
+                        de_method = de_methods_list[j],
+                        nsim = nsim))
+  } 
+  if (de_methods_list[j] == &quot;limma_voom_libscale_tmm&quot;) {
+  if (verbose) message(&quot;limma_voom_libscale_tmm&quot;)
+  libnorm_factors &lt;- edgeR::calcNormFactors(Y, method=&quot;TMM&quot;)
+  res &lt;- limma_voom(Y, X, libnorm_factors=libnorm_factors)
+  pvals &lt;- res$pvalue
+  return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
+                    type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
+                    mse=mean((res$betahat-beta)^2,na.rm=T),
+                    transform_method = de_methods_list[j],
+                    de_method = de_methods_list[j],
+                    nsim = nsim))
+  } 
+  if (de_methods_list[j] == &quot;limma_voom_libscale_rle&quot;) {
+    if (verbose) message(&quot;limma_voom_libscale_rle&quot;)
+    libnorm_factors &lt;- edgeR::calcNormFactors(Y, method=&quot;RLE&quot;)
+    if (anyNA(libnorm_factors)) {
+    return(data.frame(type1error_01=NA,
+                      type1error_001=NA,
+                      mse=NA,
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j],
+                      nsim = nsim))
+    } else {
+    res &lt;- limma_voom(Y, X, libnorm_factors=libnorm_factors)
+    pvals &lt;- res$pvalue
+    return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
+                      type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
+                      mse=mean((res$betahat-beta)^2,na.rm=T),
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j],
+                      nsim = nsim))
+    }
+  } 
+  if (de_methods_list[j] == &quot;sva_limma_voom&quot;) {
+      if (verbose) message(&quot;sva_limma_voom&quot;)
+      output_sva &lt;- sva(Y, X)
+      res &lt;- limma_voom(Y, X=output_sva$X.sv)
+      pvals &lt;- res$pval
+      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
+                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
+                        mse=mean((res$betahat-beta)^2,na.rm=T),
+                        transform_method = de_methods_list[j],
+                        de_method = de_methods_list[j],
+                        nsim = nsim))
+  } 
+  if (de_methods_list[j] == &quot;t_test&quot;) {
+      if (verbose) message(&quot;t_test&quot;)
+      foo_t &lt;- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
+          if (transform_methods_list[k] == &quot;log2_none_p1&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;none&quot;, 
+                                          log=&quot;log2&quot;, pseudo_count=1)
+          }
+          if (transform_methods_list[k] == &quot;log2_libsum_p1&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;sum&quot;, 
+                                          log=&quot;log2&quot;, pseudo_count=1)
+          }
+          if (transform_methods_list[k] == &quot;log2_libscale_TMM_p1&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;TMM&quot;, 
+                                          log=&quot;log2&quot;, pseudo_count=1)
+          }
+          if (transform_methods_list[k] == &quot;log2_libscale_RLE_p1&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;RLE&quot;, 
+                                          log=&quot;log2&quot;, pseudo_count=1)
+          }
+          if (transform_methods_list[k] == &quot;counts_pearsons&quot;) {
+          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;pearsons_residual&quot;, 
+                                          log=&quot;none&quot;, pseudo_count=1)
+          }
+          res &lt;- t_test(transformed_Y, X)
+          pvals &lt;- res[2,]
+          return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
+                            type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
+                            mse=mean((res[1,]-beta)^2,na.rm=T),
+                            transform_method = transform_methods_list[k],
+                            de_method = de_methods_list[j],
+                            nsim = nsim))
+      }) )
+      return(foo_t)      
+    }
+  }) )
+   return(foo_m)
+}
+
+
+transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&quot;, &quot;log2_libscale_TMM_p1&quot;, 
+                            &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
+de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma&quot;, &quot;limma_voom&quot;, 
+                     &quot;limma_voom_libscale_tmm&quot;,
+                     &quot;limma_voom_libscale_rle&quot;,
+                     &quot;sva_limma_voom&quot;, &quot;t_test&quot;)</code></pre>
+<hr />
 </div>
 <div id="no-differences-in-library-sizes" class="section level2">
 <h2>No differences in library sizes</h2>
-<div id="type-i-error" class="section level3">
-<h3>Type I error</h3>
-<p>Compute type I error</p>
+<p>Simulations</p>
 <pre class="r"><code>counts &lt;- readRDS(&quot;dsc/data/pbmc_counts.rds&quot;)
 nsamp &lt;- 100
 ngene &lt;- 1000
@@ -615,212 +825,72 @@ for (i in 1:nsim) {
 }
 
 
-nsim &lt;- 50    
-transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&quot;, &quot;log2_libscale_TMM_p1&quot;, 
-                            &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
-de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;t_test&quot;)
-
-# transform_methods_list &lt;- c(&quot;log2_none_p1&quot;)
-# de_methods_list &lt;- c(&quot;t_test&quot;)
 
 out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
-
+  print(i)
   data_obj &lt;- readRDS(file = paste0(&quot;output/transform_null.Rmd/data_obj_&quot;,i,&quot;.rds&quot;))
-  Y &lt;- t(data_obj$Y)
-  X &lt;- data_obj$X
-  keep_genes &lt;- filter_genes(Y, min_cell_detected=5)
-  Y &lt;- Y[keep_genes,]
-  
-  foo_m &lt;- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
 
-  if (de_methods_list[j] == &quot;edger&quot;) {
-      res &lt;- edger(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;deseq2&quot;) {
-      res &lt;- deseq2(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;limma_voom&quot;) {
-      res &lt;- limma_voom(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == &quot;t_test&quot;) {
-      foo_t &lt;- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == &quot;log2_none_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;none&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libsum_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;sum&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_TMM_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;TMM&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_RLE_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;RLE&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;counts_pearsons&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;pearsons_residual&quot;, 
-                                          log=&quot;none&quot;, pseudo_count=1)
-          }
-          res &lt;- t_test(transformed_Y, X)
-          pvals &lt;- res[2,]
-          return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                            type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                            type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
+  res &lt;- run_methods(data_obj, i, verbose=T)
+  return(res)
   }) )
-   return(foo_m)
-}))
 
+out$method &lt;- as.character(out$de_method)
+which_relabel &lt;- which(as.character(out$de_method) != as.character(out$transform_method))
+out$method[which_relabel] &lt;- paste(as.character(out$de_method), as.character(out$transform_method), sep=&quot;_&quot;)[which_relabel]
 
-saveRDS(out, file = &quot;output/transform_null.Rmd/type1error.rds&quot;)</code></pre>
+out$method &lt;- factor(out$method)
+
+saveRDS(out, file = &quot;output/transform_null.Rmd/libfactor_0.rds&quot;)</code></pre>
 <p>Results</p>
 <pre class="r"><code>#alpha &lt;- .001
-out &lt;- readRDS(file = &quot;output/transform_null.Rmd/type1error.rds&quot;)
-
-levels(out$transform_method)</code></pre>
-<pre><code>[1] &quot;edger&quot;                &quot;deseq2&quot;               &quot;limma_voom&quot;          
-[4] &quot;log2_none_p1&quot;         &quot;log2_libsum_p1&quot;       &quot;log2_libscale_TMM_p1&quot;
-[7] &quot;log2_libscale_RLE_p1&quot; &quot;counts_pearsons&quot;     </code></pre>
-<pre class="r"><code>labels_methods &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;ttest_log2_none_p1&quot;,
-            &quot;ttest_log2_libsum_p1&quot;, &quot;ttest_log2_libscale_TMM_p1&quot;, 
-            &quot;ttest_log2_libscale_RLE_p1&quot;, &quot;ttest_counts_pearsons&quot;)
-
-
-out %&gt;% #filter(n1==50) %&gt;% 
-    group_by(de_method, transform_method) %&gt;%
-    ggplot(., aes(x=transform_method, y=type1error_001, col=transform_method)) +
+out &lt;- readRDS(file = &quot;output/transform_null.Rmd/libfactor_0.rds&quot;)
+levels(out$method)</code></pre>
+<pre><code> [1] &quot;deseq2&quot;                      &quot;edger&quot;                      
+ [3] &quot;limma_log2_libscale_RLE_p1&quot;  &quot;limma_log2_libscale_TMM_p1&quot; 
+ [5] &quot;limma_log2_libsum_p1&quot;        &quot;limma_log2_none_p1&quot;         
+ [7] &quot;limma_voom&quot;                  &quot;limma_voom_libscale_rle&quot;    
+ [9] &quot;limma_voom_libscale_tmm&quot;     &quot;sva_limma_voom&quot;             
+[11] &quot;t_test_counts_pearsons&quot;      &quot;t_test_log2_libscale_RLE_p1&quot;
+[13] &quot;t_test_log2_libscale_TMM_p1&quot; &quot;t_test_log2_libsum_p1&quot;      
+[15] &quot;t_test_log2_none_p1&quot;        </code></pre>
+<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
+    group_by(method) %&gt;%
+    ggplot(., aes(x=method, y=type1error_001, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .001&quot;) +
         geom_hline(yintercept = .001, col=&quot;gray50&quot;) +
         ylab(&quot;Type I error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods) +
+      scale_x_discrete(position = &quot;top&quot;) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/type1error-1.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-type1error-1">
-Past versions of type1error-1.png
-</button>
-</p>
-<div id="fig-type1error-1" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/fcfa1efd7fd093268e7276e8e9fba25c3df1fe34/docs/figure/transform_null.Rmd/type1error-1.png" target="_blank">fcfa1ef</a>
-</td>
-<td>
-Joyce Hsiao
-</td>
-<td>
-2019-05-08
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/transform_null.Rmd/results-1.png" width="768" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
-    group_by(de_method, transform_method) %&gt;%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
+    group_by(method) %&gt;%
+    ggplot(., aes(x=method, y=type1error_01, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .01&quot;) +
         geom_hline(yintercept = .01, col=&quot;gray50&quot;) +
         ylab(&quot;Type I error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods) +
+      scale_x_discrete(position = &quot;top&quot;) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/type1error-2.png" width="672" style="display: block; margin: auto;" /></p>
-<p>
-<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-type1error-2">
-Past versions of type1error-2.png
-</button>
-</p>
-<div id="fig-type1error-2" class="collapse">
-<div class="table-responsive">
-<table class="table table-condensed table-hover">
-<thead>
-<tr>
-<th>
-Version
-</th>
-<th>
-Author
-</th>
-<th>
-Date
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>
-<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/fcfa1efd7fd093268e7276e8e9fba25c3df1fe34/docs/figure/transform_null.Rmd/type1error-2.png" target="_blank">fcfa1ef</a>
-</td>
-<td>
-Joyce Hsiao
-</td>
-<td>
-2019-05-08
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+<p><img src="figure/transform_null.Rmd/results-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
+    group_by(nsim, method) %&gt;%
+    summarise(mse_mn =mean(mse, na.rm=T)) %&gt;%
+    ggplot(., aes(x=method, y=mse_mn, col=method)) +
+#        facet_wrap(~de_method) +
+        geom_boxplot() + geom_point() + xlab(&quot;Mean squared error&quot;) +
+        ylab(&quot;Mean squared error&quot;) +
+      scale_x_discrete(position = &quot;top&quot;) +
+       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
+       stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
+<p><img src="figure/transform_null.Rmd/results-3.png" width="768" style="display: block; margin: auto;" /></p>
 <hr />
-</div>
 </div>
 <div id="library-size-factor-1" class="section level2">
 <h2>library size factor 1</h2>
-<div id="type-i-error-1" class="section level3">
-<h3>Type I error</h3>
+<p>Simulation</p>
 <pre class="r"><code>counts &lt;- readRDS(&quot;dsc/data/pbmc_counts.rds&quot;)
 nsamp &lt;- 100
 ngene &lt;- 1000
@@ -839,251 +909,69 @@ for (i in 1:nsim) {
 }
 
 
-nsim &lt;- 50
-transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&quot;, &quot;log2_libscale_TMM_p1&quot;, 
-                            &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
-de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;t_test&quot;)
-
-# transform_methods_list &lt;- c(&quot;log2_none_p1&quot;)
-# de_methods_list &lt;- c(&quot;t_test&quot;)
-
+nsim=50
 out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
 
   data_obj &lt;- readRDS(file = paste0(&quot;output/transform_null.Rmd/data_obj_libfactor_1_&quot;,
                                     i,&quot;.rds&quot;))
-  Y &lt;- t(data_obj$Y)
-  X &lt;- data_obj$X
-  keep_genes &lt;- filter_genes(Y, min_cell_detected=5)
-  Y &lt;- Y[keep_genes,]
-  
-  foo_m &lt;- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
 
-  if (de_methods_list[j] == &quot;edger&quot;) {
-      res &lt;- edger(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;deseq2&quot;) {
-      res &lt;- deseq2(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;limma_voom&quot;) {
-      res &lt;- limma_voom(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == &quot;t_test&quot;) {
-      foo_t &lt;- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == &quot;log2_none_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;none&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libsum_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;sum&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_TMM_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;TMM&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_RLE_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;RLE&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;counts_pearsons&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;pearsons_residual&quot;, 
-                                          log=&quot;none&quot;, pseudo_count=1)
-          }
-          res &lt;- t_test(transformed_Y, X)
-          pvals &lt;- res[2,]
-          return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                            type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                            type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
+  res &lt;- run_methods(data_obj, i)
+  return(res)
   }) )
-   return(foo_m)
-}))
 
+out$method &lt;- as.character(out$de_method)
+which_relabel &lt;- which(as.character(out$de_method) != as.character(out$transform_method))
+out$method[which_relabel] &lt;- paste(as.character(out$de_method), as.character(out$transform_method), sep=&quot;_&quot;)[which_relabel]
 
-saveRDS(out, file = &quot;output/transform_null.Rmd/type1error_libfactor_1.rds&quot;)</code></pre>
+out$method &lt;- factor(out$method)
+saveRDS(out, file = &quot;output/transform_null.Rmd/libfactor_1.rds&quot;)</code></pre>
+<p>Results</p>
 <pre class="r"><code>#alpha &lt;- .001
-out &lt;- readRDS(file = &quot;output/transform_null.Rmd/type1error_libfactor_1.rds&quot;)
+out &lt;- readRDS(file = &quot;output/transform_null.Rmd/libfactor_1.rds&quot;)
 
-levels(out$transform_method)</code></pre>
-<pre><code>[1] &quot;edger&quot;                &quot;deseq2&quot;               &quot;limma_voom&quot;          
-[4] &quot;log2_none_p1&quot;         &quot;log2_libsum_p1&quot;       &quot;log2_libscale_TMM_p1&quot;
-[7] &quot;log2_libscale_RLE_p1&quot; &quot;counts_pearsons&quot;     </code></pre>
-<pre class="r"><code>labels_methods &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;ttest_log2_none_p1&quot;,
-            &quot;ttest_log2_libsum_p1&quot;, &quot;ttest_log2_libscale_TMM_p1&quot;, 
-            &quot;ttest_log2_libscale_RLE_p1&quot;, &quot;ttest_counts_pearsons&quot;)
-
-
-out %&gt;% #filter(n1==50) %&gt;% 
-    group_by(de_method, transform_method) %&gt;%
-    ggplot(., aes(x=transform_method, y=type1error_001, col=transform_method)) +
+levels(out$method)</code></pre>
+<pre><code> [1] &quot;deseq2&quot;                      &quot;edger&quot;                      
+ [3] &quot;limma_log2_libscale_RLE_p1&quot;  &quot;limma_log2_libscale_TMM_p1&quot; 
+ [5] &quot;limma_log2_libsum_p1&quot;        &quot;limma_log2_none_p1&quot;         
+ [7] &quot;limma_voom&quot;                  &quot;limma_voom_libscale_rle&quot;    
+ [9] &quot;limma_voom_libscale_tmm&quot;     &quot;sva_limma_voom&quot;             
+[11] &quot;t_test_counts_pearsons&quot;      &quot;t_test_log2_libscale_RLE_p1&quot;
+[13] &quot;t_test_log2_libscale_TMM_p1&quot; &quot;t_test_log2_libsum_p1&quot;      
+[15] &quot;t_test_log2_none_p1&quot;        </code></pre>
+<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
+    group_by(method) %&gt;%
+    ggplot(., aes(x=method, y=type1error_001, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .001&quot;) +
         geom_hline(yintercept = .001, col=&quot;gray50&quot;) +
         ylab(&quot;Type I error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods) +
+      scale_x_discrete(position = &quot;top&quot;) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/type1error_libfactor_1-1.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/transform_null.Rmd/results_libfactor_1-1.png" width="768" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
-    group_by(de_method, transform_method) %&gt;%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
+    group_by(method) %&gt;%
+    ggplot(., aes(x=method, y=type1error_01, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .01&quot;) +
         geom_hline(yintercept = .01, col=&quot;gray50&quot;) +
         ylab(&quot;Type I error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods) +
+      scale_x_discrete(position = &quot;top&quot;) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/type1error_libfactor_1-2.png" width="672" style="display: block; margin: auto;" /></p>
-</div>
-<div id="mse" class="section level3">
-<h3>MSE</h3>
-<pre class="r"><code>nsim &lt;- 50    
-transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&quot;, &quot;log2_libscale_TMM_p1&quot;, 
-                            &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
-de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;t_test&quot;)
-
-out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
-
-  data_obj &lt;- readRDS(file = paste0(&quot;output/transform_null.Rmd/data_obj_libfactor_1_&quot;,
-                                    i,&quot;.rds&quot;))
-  Y &lt;- t(data_obj$Y)
-  X &lt;- data_obj$X
-  beta &lt;- data_obj$beta
-  
-  keep_genes &lt;- filter_genes(Y, min_cell_detected=5)
-  Y &lt;- Y[keep_genes,]
-  beta &lt;- beta[keep_genes]
-  
-  foo_m &lt;- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
-
-  if (de_methods_list[j] == &quot;edger&quot;) {
-      res &lt;- edger(Y=Y, X=X)
-      return(data.frame(mse = (res$est-beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;deseq2&quot;) {
-      res &lt;- deseq2(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(mse = (res$est - beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;limma_voom&quot;) {
-      res &lt;- limma_voom(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(mse=(res$betahat-beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == &quot;t_test&quot;) {
-      foo_t &lt;- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == &quot;log2_none_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;none&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libsum_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;sum&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_TMM_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;TMM&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_RLE_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;RLE&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;counts_pearsons&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;pearsons_residual&quot;, 
-                                          log=&quot;none&quot;, pseudo_count=1)
-          }
-          res &lt;- t_test(transformed_Y, X)
-          return(data.frame(mse=(res[1,]-beta)^2,
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
-  }) )
-   return(foo_m)
-}))
-
-saveRDS(out, file = &quot;output/transform_null.Rmd/mse_libfactor_1.rds&quot;)</code></pre>
-<pre class="r"><code>mse_libfactor_1 &lt;- readRDS(file = &quot;output/transform_null.Rmd/mse_libfactor_1.rds&quot;)
-
-levels(mse_libfactor_1$transform_method)</code></pre>
-<pre><code>[1] &quot;edger&quot;                &quot;deseq2&quot;               &quot;limma_voom&quot;          
-[4] &quot;log2_none_p1&quot;         &quot;log2_libsum_p1&quot;       &quot;log2_libscale_TMM_p1&quot;
-[7] &quot;log2_libscale_RLE_p1&quot; &quot;counts_pearsons&quot;     </code></pre>
-<pre class="r"><code>labels_methods &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;ttest_log2_none_p1&quot;,
-            &quot;ttest_log2_libsum_p1&quot;, &quot;ttest_log2_libscale_TMM_p1&quot;, 
-            &quot;ttest_log2_libscale_RLE_p1&quot;, &quot;ttest_counts_pearsons&quot;)
-
-
-mse_libfactor_1 %&gt;% #filter(n1==50) %&gt;% 
-    group_by(nsim, transform_method) %&gt;%
+<p><img src="figure/transform_null.Rmd/results_libfactor_1-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
+    group_by(nsim, method) %&gt;%
     summarise(mse_mn =mean(mse, na.rm=T)) %&gt;%
-    ggplot(., aes(x=transform_method, y=mse_mn, col=transform_method)) +
+    ggplot(., aes(x=method, y=mse_mn, col=method)) +
 #        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab(&quot;Methods&quot;) +
+        geom_boxplot() + geom_point() + xlab(&quot;Mean squared error&quot;) +
         ylab(&quot;Mean squared error&quot;) +
-        ggtitle(&quot;Libsize factor 2 - Mean squared error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods) +
+      scale_x_discrete(position = &quot;top&quot;) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/mse_libfactor_1-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>subset(mse_libfactor_1, transform_method != &quot;limma_voom&quot;) %&gt;% #filter(n1==50) %&gt;% 
-    group_by(nsim, transform_method) %&gt;%
-    summarise(mse_mn =mean(mse, na.rm=T)) %&gt;%
-    ggplot(., aes(x=transform_method, y=mse_mn, col=transform_method)) +
-#        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab(&quot;Methods&quot;) +
-        ylab(&quot;Mean squared error&quot;) +
-        ggtitle(&quot;Libsize factor 2 - Mean squared error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods[-3]) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
-       stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/mse_libfactor_1-2.png" width="672" style="display: block; margin: auto;" /></p>
+<p><img src="figure/transform_null.Rmd/results_libfactor_1-3.png" width="768" style="display: block; margin: auto;" /></p>
 <hr />
-</div>
 </div>
 <div id="library-size-factor-2" class="section level2">
 <h2>library size factor 2</h2>
@@ -1105,257 +993,76 @@ for (i in 1:nsim) {
 }
 
 
-nsim &lt;- 50
-transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&quot;, &quot;log2_libscale_TMM_p1&quot;, 
-                            &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
-de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;t_test&quot;)
-
-# transform_methods_list &lt;- c(&quot;log2_none_p1&quot;)
-# de_methods_list &lt;- c(&quot;t_test&quot;)
-
+nsim=50
 out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
-
+  print(i)
   data_obj &lt;- readRDS(file = paste0(&quot;output/transform_null.Rmd/data_obj_libfactor_2_&quot;,
                                     i,&quot;.rds&quot;))
-  Y &lt;- t(data_obj$Y)
-  X &lt;- data_obj$X
-  keep_genes &lt;- filter_genes(Y, min_cell_detected=5)
-  Y &lt;- Y[keep_genes,]
-  
-  foo_m &lt;- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
 
-  if (de_methods_list[j] == &quot;edger&quot;) {
-      res &lt;- edger(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;deseq2&quot;) {
-      res &lt;- deseq2(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;limma_voom&quot;) {
-      res &lt;- limma_voom(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                        type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                        type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == &quot;t_test&quot;) {
-      foo_t &lt;- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == &quot;log2_none_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;none&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libsum_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;sum&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_TMM_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;TMM&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_RLE_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;RLE&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;counts_pearsons&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;pearsons_residual&quot;, 
-                                          log=&quot;none&quot;, pseudo_count=1)
-          }
-          res &lt;- t_test(transformed_Y, X)
-          pvals &lt;- res[2,]
-          return(data.frame(type1error_01=mean(pvals &lt; .01, na.rm=TRUE),
-                            type1error_005=mean(pvals &lt; .005, na.rm=TRUE),
-                            type1error_001=mean(pvals &lt; .001, na.rm=TRUE),
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
+  res &lt;- run_methods(data_obj, i, verbose = T)
+  return(res)
   }) )
-   return(foo_m)
-}))
+out$method &lt;- as.character(out$de_method)
+which_relabel &lt;- which(as.character(out$de_method) != as.character(out$transform_method))
+out$method[which_relabel] &lt;- paste(as.character(out$de_method), as.character(out$transform_method), sep=&quot;_&quot;)[which_relabel]
+out$method &lt;- factor(out$method)
 
-
-saveRDS(out, file = &quot;output/transform_null.Rmd/type1error_libfactor_2.rds&quot;)</code></pre>
-<div id="type-i-error-distribution" class="section level3">
-<h3>Type I error distribution</h3>
+saveRDS(out, file = &quot;output/transform_null.Rmd/libfactor_2.rds&quot;)</code></pre>
+<p>Results</p>
 <pre class="r"><code>#alpha &lt;- .001
-out &lt;- readRDS(file = &quot;output/transform_null.Rmd/type1error_libfactor_2.rds&quot;)
+out &lt;- readRDS(file = &quot;output/transform_null.Rmd/libfactor_2.rds&quot;)
 
-levels(out$transform_method)</code></pre>
-<pre><code>[1] &quot;edger&quot;                &quot;deseq2&quot;               &quot;limma_voom&quot;          
-[4] &quot;log2_none_p1&quot;         &quot;log2_libsum_p1&quot;       &quot;log2_libscale_TMM_p1&quot;
-[7] &quot;log2_libscale_RLE_p1&quot; &quot;counts_pearsons&quot;     </code></pre>
-<pre class="r"><code>labels_methods &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;ttest_log2_none_p1&quot;,
-            &quot;ttest_log2_libsum_p1&quot;, &quot;ttest_log2_libscale_TMM_p1&quot;, 
-            &quot;ttest_log2_libscale_RLE_p1&quot;, &quot;ttest_counts_pearsons&quot;)
-
-
-out %&gt;% #filter(n1==50) %&gt;% 
-    group_by(de_method, transform_method) %&gt;%
-    ggplot(., aes(x=transform_method, y=type1error_001, col=transform_method)) +
+levels(out$method)</code></pre>
+<pre><code> [1] &quot;deseq2&quot;                      &quot;edger&quot;                      
+ [3] &quot;limma_log2_libscale_RLE_p1&quot;  &quot;limma_log2_libscale_TMM_p1&quot; 
+ [5] &quot;limma_log2_libsum_p1&quot;        &quot;limma_log2_none_p1&quot;         
+ [7] &quot;limma_voom&quot;                  &quot;limma_voom_libscale_rle&quot;    
+ [9] &quot;limma_voom_libscale_tmm&quot;     &quot;sva_limma_voom&quot;             
+[11] &quot;t_test_counts_pearsons&quot;      &quot;t_test_log2_libscale_RLE_p1&quot;
+[13] &quot;t_test_log2_libscale_TMM_p1&quot; &quot;t_test_log2_libsum_p1&quot;      
+[15] &quot;t_test_log2_none_p1&quot;        </code></pre>
+<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
+    group_by(method) %&gt;%
+    ggplot(., aes(x=method, y=type1error_001, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .001&quot;) +
         geom_hline(yintercept = .001, col=&quot;gray50&quot;) +
         ylab(&quot;Type I error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods) +
+      scale_x_discrete(position = &quot;top&quot;) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<pre><code>Warning: Removed 1 rows containing non-finite values (stat_boxplot).</code></pre>
-<pre><code>Warning: Removed 1 rows containing non-finite values (stat_summary).</code></pre>
-<pre><code>Warning: Removed 1 rows containing missing values (geom_point).</code></pre>
-<p><img src="figure/transform_null.Rmd/type1error_libfactor_2-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre><code>Warning: Removed 3 rows containing non-finite values (stat_boxplot).</code></pre>
+<pre><code>Warning: Removed 3 rows containing non-finite values (stat_summary).</code></pre>
+<pre><code>Warning: Removed 3 rows containing missing values (geom_point).</code></pre>
+<p><img src="figure/transform_null.Rmd/results_libfactor_2-1.png" width="768" style="display: block; margin: auto;" /></p>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
-    group_by(de_method, transform_method) %&gt;%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
+    group_by(method) %&gt;%
+    ggplot(., aes(x=method, y=type1error_01, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab(&quot;Type 1 error at alpha &lt; .01&quot;) +
         geom_hline(yintercept = .01, col=&quot;gray50&quot;) +
         ylab(&quot;Type I error&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods) +
+      scale_x_discrete(position = &quot;top&quot;) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<pre><code>Warning: Removed 1 rows containing non-finite values (stat_boxplot).</code></pre>
-<pre><code>Warning: Removed 1 rows containing non-finite values (stat_summary).</code></pre>
-<pre><code>Warning: Removed 1 rows containing missing values (geom_point).</code></pre>
-<p><img src="figure/transform_null.Rmd/type1error_libfactor_2-2.png" width="672" style="display: block; margin: auto;" /></p>
-</div>
-<div id="mse-1" class="section level3">
-<h3>MSE</h3>
-<pre class="r"><code>nsim &lt;- 50    
-transform_methods_list &lt;- c(&quot;log2_none_p1&quot;, &quot;log2_libsum_p1&quot;, &quot;log2_libscale_TMM_p1&quot;, 
-                            &quot;log2_libscale_RLE_p1&quot;, &quot;counts_pearsons&quot;)
-de_methods_list &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;t_test&quot;)
-
-out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
-
-  data_obj &lt;- readRDS(file = paste0(&quot;output/transform_null.Rmd/data_obj_libfactor_2_&quot;,
-                                    i,&quot;.rds&quot;))
-  Y &lt;- t(data_obj$Y)
-  X &lt;- data_obj$X
-  beta &lt;- data_obj$beta
-  
-  keep_genes &lt;- filter_genes(Y, min_cell_detected=5)
-  Y &lt;- Y[keep_genes,]
-  beta &lt;- beta[keep_genes]
-  
-  foo_m &lt;- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
-
-  if (de_methods_list[j] == &quot;edger&quot;) {
-      res &lt;- edger(Y=Y, X=X)
-      return(data.frame(mse = (res$est-beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;deseq2&quot;) {
-      res &lt;- deseq2(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(mse = (res$est - beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == &quot;limma_voom&quot;) {
-      res &lt;- limma_voom(Y=Y, X=X)
-      pvals &lt;- res$pval
-      return(data.frame(mse=(res$betahat-beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == &quot;t_test&quot;) {
-      foo_t &lt;- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == &quot;log2_none_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;none&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libsum_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;sum&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_TMM_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;TMM&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;log2_libscale_RLE_p1&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;RLE&quot;, 
-                                          log=&quot;log2&quot;, pseudo_count=1)
-          }
-          if (transform_methods_list[k] == &quot;counts_pearsons&quot;) {
-          transformed_Y &lt;- transform_data(Y, libscale_method = &quot;pearsons_residual&quot;, 
-                                          log=&quot;none&quot;, pseudo_count=1)
-          }
-          res &lt;- t_test(transformed_Y, X)
-          return(data.frame(mse=(res[1,]-beta)^2,
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
-  }) )
-   return(foo_m)
-}))
-
-saveRDS(out, file = &quot;output/transform_null.Rmd/mse_libfactor_2.rds&quot;)</code></pre>
-<pre class="r"><code>mse_libfactor_2 &lt;- readRDS(file = &quot;output/transform_null.Rmd/mse_libfactor_2.rds&quot;)
-
-levels(mse_libfactor_1$transform_method)</code></pre>
-<pre><code>[1] &quot;edger&quot;                &quot;deseq2&quot;               &quot;limma_voom&quot;          
-[4] &quot;log2_none_p1&quot;         &quot;log2_libsum_p1&quot;       &quot;log2_libscale_TMM_p1&quot;
-[7] &quot;log2_libscale_RLE_p1&quot; &quot;counts_pearsons&quot;     </code></pre>
-<pre class="r"><code>labels_methods &lt;- c(&quot;edger&quot;, &quot;deseq2&quot;, &quot;limma_voom&quot;, &quot;ttest_log2_none_p1&quot;,
-            &quot;ttest_log2_libsum_p1&quot;, &quot;ttest_log2_libscale_TMM_p1&quot;, 
-            &quot;ttest_log2_libscale_RLE_p1&quot;, &quot;ttest_counts_pearsons&quot;)
-
-
-mse_libfactor_1 %&gt;% #filter(n1==50) %&gt;% 
-    group_by(nsim, transform_method) %&gt;%
+<pre><code>Warning: Removed 3 rows containing non-finite values (stat_boxplot).</code></pre>
+<pre><code>Warning: Removed 3 rows containing non-finite values (stat_summary).</code></pre>
+<pre><code>Warning: Removed 3 rows containing missing values (geom_point).</code></pre>
+<p><img src="figure/transform_null.Rmd/results_libfactor_2-2.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
+    group_by(nsim, method) %&gt;%
     summarise(mse_mn =mean(mse, na.rm=T)) %&gt;%
-    ggplot(., aes(x=transform_method, y=mse_mn, col=transform_method)) +
+    ggplot(., aes(x=method, y=mse_mn, col=method)) +
 #        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab(&quot;Methods&quot;) +
+        geom_boxplot() + geom_point() + xlab(&quot;Mean squared error&quot;) +
         ylab(&quot;Mean squared error&quot;) +
-        ggtitle(&quot;Bias of the estimates&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods) +
+      scale_x_discrete(position = &quot;top&quot;) +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/mse_libfactor_2-1.png" width="672" style="display: block; margin: auto;" /></p>
-<pre class="r"><code>subset(mse_libfactor_1, transform_method != &quot;limma_voom&quot;) %&gt;% #filter(n1==50) %&gt;% 
-    group_by(nsim, transform_method) %&gt;%
-    summarise(mse_mn =mean(mse, na.rm=T)) %&gt;%
-    ggplot(., aes(x=transform_method, y=mse_mn, col=transform_method)) +
-#        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab(&quot;Methods&quot;) +
-        ylab(&quot;Mean squared error&quot;) +
-        ggtitle(&quot;Bias of the estimates&quot;) +
-      scale_x_discrete(position = &quot;top&quot;,
-                       labels=labels_methods[-3]) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
-       stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
-<p><img src="figure/transform_null.Rmd/mse_libfactor_2-2.png" width="672" style="display: block; margin: auto;" /></p>
+<pre><code>Warning: Removed 3 rows containing non-finite values (stat_boxplot).</code></pre>
+<pre><code>Warning: Removed 3 rows containing non-finite values (stat_summary).</code></pre>
+<pre><code>Warning: Removed 3 rows containing missing values (geom_point).</code></pre>
+<p><img src="figure/transform_null.Rmd/results_libfactor_2-3.png" width="768" style="display: block; margin: auto;" /></p>
 <hr />
 <p>TBD</p>
 <pre class="r"><code>res_libfactor_null &lt;- readRDS(file = &quot;output/transform_null.Rmd/type1error.rds&quot;)
@@ -1434,7 +1141,6 @@ loaded via a namespace (and not attached):
 [52] assertthat_0.2.0   rmarkdown_1.10     httr_1.3.1        
 [55] rstudioapi_0.10    globals_0.12.4     R6_2.4.0          
 [58] nlme_3.1-137       git2r_0.23.0       compiler_3.5.1    </code></pre>
-</div>
 </div>
 </div>
 
