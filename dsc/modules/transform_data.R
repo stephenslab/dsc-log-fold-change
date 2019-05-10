@@ -1,9 +1,10 @@
 
 #' @description transform expression count data
 #' @param Y count data; sample by gene
+#' @param X design matrix (sample by variables)
 #'
-transform_data <- function(Y, pseudo_count = 1, log=c("none", "log2", "log10"),
-                           libscale_method = c("none", "sum", "TMM", "upperquartile",
+transform_data <- function(Y, X=NULL, pseudo_count = 1, log=c("none", "log2", "log10"),
+                           libscale_method = c("none", "sum", "TMM", "RLE",
                                                "pearsons_residual")) {
   libsize <- colSums(Y)
 

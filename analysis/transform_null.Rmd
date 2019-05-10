@@ -42,9 +42,10 @@ $p$: a positive pseudo-count added to expression matrix; traditionally it is use
 
 Pipelines compared:
 
-* t-test + all 5 data transformation methods listed above
 * DEseq2: count data + RLE transformation
 * edgeR: count data + TMM transformation
+* limma_voom + data transformation 1-4
+* t-test + all 5 data transformation methods listed above
 
 ---
 
@@ -93,14 +94,190 @@ source("dsc/modules/wilcoxon.R")
 source("dsc/modules/limma_voom.R")
 source("dsc/modules/edger.R")
 source("dsc/modules/deseq2.R")
+source("dsc/modules/sva.R")
+
+run_methods <- function(data_obj, nsim, verbose=F) {
+  
+  Y <- t(data_obj$Y)
+  X <- data_obj$X
+  beta <- data_obj$beta
+  keep_genes <- filter_genes(Y, min_cell_detected=5)
+  Y <- Y[keep_genes,]
+  beta <- beta[keep_genes]
+  
+  foo_m <- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
+
+  if (de_methods_list[j] == "edger") {
+    if (verbose) message("edger")
+      res <- edger(Y=Y, X=X)
+      pvals <- res$pval
+      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
+                        type1error_001=mean(pvals < .001, na.rm=TRUE),
+                        mse = mean((res$est - beta)^2, na.rm=T),
+                        transform_method = de_methods_list[j],
+                        de_method = de_methods_list[j],
+                        nsim = nsim))
+  } 
+  if (de_methods_list[j] == "deseq2") {
+      if (verbose) message("deseq2")
+      res <- deseq2(Y=Y, X=X)
+      pvals <- res$pval
+      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
+                        type1error_001=mean(pvals < .001, na.rm=TRUE),
+                        mse = mean((res$est - beta)^2, na.rm=T),
+                        transform_method = de_methods_list[j],
+                        de_method = de_methods_list[j],
+                        nsim = nsim))
+  } 
+  if (de_methods_list[j] == "limma") {
+      if (verbose) message("limma")
+      foo_l <- do.call(rbind, lapply(1:(length(transform_methods_list)-1), function(k) {
+          if (transform_methods_list[k] == "log2_none_p1") {
+          transformed_Y <- transform_data(Y, libscale_method = "none", 
+                                          log="log2", pseudo_count=1)
+          }
+          if (transform_methods_list[k] == "log2_libsum_p1") {
+          transformed_Y <- transform_data(Y, libscale_method = "sum", 
+                                          log="log2", pseudo_count=1)
+          }
+          if (transform_methods_list[k] == "log2_libscale_TMM_p1") {
+          transformed_Y <- transform_data(Y, libscale_method = "TMM", 
+                                          log="log2", pseudo_count=1)
+          }
+          if (transform_methods_list[k] == "log2_libscale_RLE_p1") {
+          transformed_Y <- transform_data(Y, libscale_method = "RLE", 
+                                          log="log2", pseudo_count=1)
+          }
+          if (sum(is.na(transformed_Y))==nrow(transformed_Y)*ncol(transformed_Y)) {
+          return(data.frame(type1error_01=NA,
+                            type1error_001=NA,
+                            mse=NA,
+                            transform_method = transform_methods_list[k],
+                            de_method = de_methods_list[j],
+                            nsim = nsim))
+          } else {
+          fit <- lmFit(transformed_Y,design=X)
+          fit.ebayes <- eBayes(fit)
+          pvals <- fit.ebayes$p.value[,2]
+          return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
+                            type1error_001=mean(pvals < .001, na.rm=TRUE),
+                            mse=mean((fit.ebayes$coefficients[,2]-beta)^2,na.rm=T),
+                            transform_method = transform_methods_list[k],
+                            de_method = de_methods_list[j],
+                            nsim = nsim))
+          }
+      }) )
+      return(foo_l)      
+    }
+  if (de_methods_list[j] == "limma_voom") {
+      if (verbose) message("limma_voom")
+      res <- limma_voom(Y=Y, X=X)
+      pvals <- res$pvalue
+      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
+                        type1error_001=mean(pvals < .001, na.rm=TRUE),
+                        mse=mean((res$betahat-beta)^2,na.rm=T),
+                        transform_method = de_methods_list[j],
+                        de_method = de_methods_list[j],
+                        nsim = nsim))
+  } 
+  if (de_methods_list[j] == "limma_voom_libscale_tmm") {
+  if (verbose) message("limma_voom_libscale_tmm")
+  libnorm_factors <- edgeR::calcNormFactors(Y, method="TMM")
+  res <- limma_voom(Y, X, libnorm_factors=libnorm_factors)
+  pvals <- res$pvalue
+  return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
+                    type1error_001=mean(pvals < .001, na.rm=TRUE),
+                    mse=mean((res$betahat-beta)^2,na.rm=T),
+                    transform_method = de_methods_list[j],
+                    de_method = de_methods_list[j],
+                    nsim = nsim))
+  } 
+  if (de_methods_list[j] == "limma_voom_libscale_rle") {
+    if (verbose) message("limma_voom_libscale_rle")
+    libnorm_factors <- edgeR::calcNormFactors(Y, method="RLE")
+    if (anyNA(libnorm_factors)) {
+    return(data.frame(type1error_01=NA,
+                      type1error_001=NA,
+                      mse=NA,
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j],
+                      nsim = nsim))
+    } else {
+    res <- limma_voom(Y, X, libnorm_factors=libnorm_factors)
+    pvals <- res$pvalue
+    return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
+                      type1error_001=mean(pvals < .001, na.rm=TRUE),
+                      mse=mean((res$betahat-beta)^2,na.rm=T),
+                      transform_method = de_methods_list[j],
+                      de_method = de_methods_list[j],
+                      nsim = nsim))
+    }
+  } 
+  if (de_methods_list[j] == "sva_limma_voom") {
+      if (verbose) message("sva_limma_voom")
+      output_sva <- sva(Y, X)
+      res <- limma_voom(Y, X=output_sva$X.sv)
+      pvals <- res$pval
+      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
+                        type1error_001=mean(pvals < .001, na.rm=TRUE),
+                        mse=mean((res$betahat-beta)^2,na.rm=T),
+                        transform_method = de_methods_list[j],
+                        de_method = de_methods_list[j],
+                        nsim = nsim))
+  } 
+  if (de_methods_list[j] == "t_test") {
+      if (verbose) message("t_test")
+      foo_t <- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
+          if (transform_methods_list[k] == "log2_none_p1") {
+          transformed_Y <- transform_data(Y, libscale_method = "none", 
+                                          log="log2", pseudo_count=1)
+          }
+          if (transform_methods_list[k] == "log2_libsum_p1") {
+          transformed_Y <- transform_data(Y, libscale_method = "sum", 
+                                          log="log2", pseudo_count=1)
+          }
+          if (transform_methods_list[k] == "log2_libscale_TMM_p1") {
+          transformed_Y <- transform_data(Y, libscale_method = "TMM", 
+                                          log="log2", pseudo_count=1)
+          }
+          if (transform_methods_list[k] == "log2_libscale_RLE_p1") {
+          transformed_Y <- transform_data(Y, libscale_method = "RLE", 
+                                          log="log2", pseudo_count=1)
+          }
+          if (transform_methods_list[k] == "counts_pearsons") {
+          transformed_Y <- transform_data(Y, libscale_method = "pearsons_residual", 
+                                          log="none", pseudo_count=1)
+          }
+          res <- t_test(transformed_Y, X)
+          pvals <- res[2,]
+          return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
+                            type1error_001=mean(pvals < .001, na.rm=TRUE),
+                            mse=mean((res[1,]-beta)^2,na.rm=T),
+                            transform_method = transform_methods_list[k],
+                            de_method = de_methods_list[j],
+                            nsim = nsim))
+      }) )
+      return(foo_t)      
+    }
+  }) )
+   return(foo_m)
+}
+
+
+transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM_p1", 
+                            "log2_libscale_RLE_p1", "counts_pearsons")
+de_methods_list <- c("edger", "deseq2", "limma", "limma_voom", 
+                     "limma_voom_libscale_tmm",
+                     "limma_voom_libscale_rle",
+                     "sva_limma_voom", "t_test")
 ```
 
 
+---
+
 ## No differences in library sizes 
 
-### Type I error
-
-Compute type I error 
+Simulations
 
 ```{r simulations_null, warning=F, message=F, eval=F}
 counts <- readRDS("dsc/data/pbmc_counts.rds")
@@ -121,132 +298,64 @@ for (i in 1:nsim) {
 }
 
 
-nsim <- 50    
-transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM_p1", 
-                            "log2_libscale_RLE_p1", "counts_pearsons")
-de_methods_list <- c("edger", "deseq2", "limma_voom", "t_test")
-
-# transform_methods_list <- c("log2_none_p1")
-# de_methods_list <- c("t_test")
 
 out <- do.call(rbind, lapply(1:nsim, function(i) {
-
+  print(i)
   data_obj <- readRDS(file = paste0("output/transform_null.Rmd/data_obj_",i,".rds"))
-  Y <- t(data_obj$Y)
-  X <- data_obj$X
-  keep_genes <- filter_genes(Y, min_cell_detected=5)
-  Y <- Y[keep_genes,]
-  
-  foo_m <- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
 
-  if (de_methods_list[j] == "edger") {
-      res <- edger(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "deseq2") {
-      res <- deseq2(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "limma_voom") {
-      res <- limma_voom(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == "t_test") {
-      foo_t <- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == "log2_none_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "none", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libsum_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "sum", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_TMM_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "TMM", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_RLE_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "RLE", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "counts_pearsons") {
-          transformed_Y <- transform_data(Y, libscale_method = "pearsons_residual", 
-                                          log="none", pseudo_count=1)
-          }
-          res <- t_test(transformed_Y, X)
-          pvals <- res[2,]
-          return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                            type1error_005=mean(pvals < .005, na.rm=TRUE),
-                            type1error_001=mean(pvals < .001, na.rm=TRUE),
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
+  res <- run_methods(data_obj, i, verbose=T)
+  return(res)
   }) )
-   return(foo_m)
-}))
 
+out$method <- as.character(out$de_method)
+which_relabel <- which(as.character(out$de_method) != as.character(out$transform_method))
+out$method[which_relabel] <- paste(as.character(out$de_method), as.character(out$transform_method), sep="_")[which_relabel]
 
-saveRDS(out, file = "output/transform_null.Rmd/type1error.rds")
+out$method <- factor(out$method)
+
+saveRDS(out, file = "output/transform_null.Rmd/libfactor_0.rds")
 ```
 
 Results
 
-```{r type1error, eval=T}
+```{r results, eval=T, fig.width=8}
 #alpha <- .001
-out <- readRDS(file = "output/transform_null.Rmd/type1error.rds")
-
-levels(out$transform_method)
-labels_methods <- c("edger", "deseq2", "limma_voom", "ttest_log2_none_p1",
-            "ttest_log2_libsum_p1", "ttest_log2_libscale_TMM_p1", 
-            "ttest_log2_libscale_RLE_p1", "ttest_counts_pearsons")
+out <- readRDS(file = "output/transform_null.Rmd/libfactor_0.rds")
+levels(out$method)
 
 
 out %>% #filter(n1==50) %>% 
-    group_by(de_method, transform_method) %>%
-    ggplot(., aes(x=transform_method, y=type1error_001, col=transform_method)) +
+    group_by(method) %>%
+    ggplot(., aes(x=method, y=type1error_001, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .001") +
         geom_hline(yintercept = .001, col="gray50") +
         ylab("Type I error") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods) +
+      scale_x_discrete(position = "top") +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
   
 out %>% #filter(n1==50) %>% 
-    group_by(de_method, transform_method) %>%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
+    group_by(method) %>%
+    ggplot(., aes(x=method, y=type1error_01, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .01") +
         geom_hline(yintercept = .01, col="gray50") +
         ylab("Type I error") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods) +
+      scale_x_discrete(position = "top") +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 
+out %>% #filter(n1==50) %>% 
+    group_by(nsim, method) %>%
+    summarise(mse_mn =mean(mse, na.rm=T)) %>%
+    ggplot(., aes(x=method, y=mse_mn, col=method)) +
+#        facet_wrap(~de_method) +
+        geom_boxplot() + geom_point() + xlab("Mean squared error") +
+        ylab("Mean squared error") +
+      scale_x_discrete(position = "top") +
+       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
+       stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 ```
 
 
@@ -255,9 +364,9 @@ out %>% #filter(n1==50) %>%
 
 ## library size factor 1
 
-### Type I error
+Simulation
 
-```{r simulate_data_libfactor_1_type1error, warning=F, message=F, eval=F}
+```{r simulate_data_libfactor_1, warning=F, message=F, eval=F}
 counts <- readRDS("dsc/data/pbmc_counts.rds")
 nsamp <- 100
 ngene <- 1000
@@ -276,252 +385,67 @@ for (i in 1:nsim) {
 }
 
 
-nsim <- 50
-transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM_p1", 
-                            "log2_libscale_RLE_p1", "counts_pearsons")
-de_methods_list <- c("edger", "deseq2", "limma_voom", "t_test")
-
-# transform_methods_list <- c("log2_none_p1")
-# de_methods_list <- c("t_test")
-
+nsim=50
 out <- do.call(rbind, lapply(1:nsim, function(i) {
 
   data_obj <- readRDS(file = paste0("output/transform_null.Rmd/data_obj_libfactor_1_",
                                     i,".rds"))
-  Y <- t(data_obj$Y)
-  X <- data_obj$X
-  keep_genes <- filter_genes(Y, min_cell_detected=5)
-  Y <- Y[keep_genes,]
-  
-  foo_m <- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
 
-  if (de_methods_list[j] == "edger") {
-      res <- edger(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "deseq2") {
-      res <- deseq2(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "limma_voom") {
-      res <- limma_voom(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == "t_test") {
-      foo_t <- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == "log2_none_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "none", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libsum_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "sum", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_TMM_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "TMM", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_RLE_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "RLE", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "counts_pearsons") {
-          transformed_Y <- transform_data(Y, libscale_method = "pearsons_residual", 
-                                          log="none", pseudo_count=1)
-          }
-          res <- t_test(transformed_Y, X)
-          pvals <- res[2,]
-          return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                            type1error_005=mean(pvals < .005, na.rm=TRUE),
-                            type1error_001=mean(pvals < .001, na.rm=TRUE),
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
+  res <- run_methods(data_obj, i)
+  return(res)
   }) )
-   return(foo_m)
-}))
 
+out$method <- as.character(out$de_method)
+which_relabel <- which(as.character(out$de_method) != as.character(out$transform_method))
+out$method[which_relabel] <- paste(as.character(out$de_method), as.character(out$transform_method), sep="_")[which_relabel]
 
-saveRDS(out, file = "output/transform_null.Rmd/type1error_libfactor_1.rds")
+out$method <- factor(out$method)
+saveRDS(out, file = "output/transform_null.Rmd/libfactor_1.rds")
 ```
 
+Results
 
-```{r type1error_libfactor_1, eval=T}
+```{r results_libfactor_1, eval=T, fig.width=8}
 #alpha <- .001
-out <- readRDS(file = "output/transform_null.Rmd/type1error_libfactor_1.rds")
+out <- readRDS(file = "output/transform_null.Rmd/libfactor_1.rds")
 
-levels(out$transform_method)
-labels_methods <- c("edger", "deseq2", "limma_voom", "ttest_log2_none_p1",
-            "ttest_log2_libsum_p1", "ttest_log2_libscale_TMM_p1", 
-            "ttest_log2_libscale_RLE_p1", "ttest_counts_pearsons")
-
+levels(out$method)
 
 out %>% #filter(n1==50) %>% 
-    group_by(de_method, transform_method) %>%
-    ggplot(., aes(x=transform_method, y=type1error_001, col=transform_method)) +
+    group_by(method) %>%
+    ggplot(., aes(x=method, y=type1error_001, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .001") +
         geom_hline(yintercept = .001, col="gray50") +
         ylab("Type I error") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods) +
+      scale_x_discrete(position = "top") +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
   
 out %>% #filter(n1==50) %>% 
-    group_by(de_method, transform_method) %>%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
+    group_by(method) %>%
+    ggplot(., aes(x=method, y=type1error_01, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .01") +
         geom_hline(yintercept = .01, col="gray50") +
         ylab("Type I error") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods) +
+      scale_x_discrete(position = "top") +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
-```
 
-### MSE
-
-```{r simulate_data_libfactor_1_mse, warning=F, message=F, eval=F}
-nsim <- 50    
-transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM_p1", 
-                            "log2_libscale_RLE_p1", "counts_pearsons")
-de_methods_list <- c("edger", "deseq2", "limma_voom", "t_test")
-
-out <- do.call(rbind, lapply(1:nsim, function(i) {
-
-  data_obj <- readRDS(file = paste0("output/transform_null.Rmd/data_obj_libfactor_1_",
-                                    i,".rds"))
-  Y <- t(data_obj$Y)
-  X <- data_obj$X
-  beta <- data_obj$beta
-  
-  keep_genes <- filter_genes(Y, min_cell_detected=5)
-  Y <- Y[keep_genes,]
-  beta <- beta[keep_genes]
-  
-  foo_m <- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
-
-  if (de_methods_list[j] == "edger") {
-      res <- edger(Y=Y, X=X)
-      return(data.frame(mse = (res$est-beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "deseq2") {
-      res <- deseq2(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(mse = (res$est - beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "limma_voom") {
-      res <- limma_voom(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(mse=(res$betahat-beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == "t_test") {
-      foo_t <- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == "log2_none_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "none", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libsum_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "sum", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_TMM_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "TMM", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_RLE_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "RLE", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "counts_pearsons") {
-          transformed_Y <- transform_data(Y, libscale_method = "pearsons_residual", 
-                                          log="none", pseudo_count=1)
-          }
-          res <- t_test(transformed_Y, X)
-          return(data.frame(mse=(res[1,]-beta)^2,
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
-  }) )
-   return(foo_m)
-}))
-
-saveRDS(out, file = "output/transform_null.Rmd/mse_libfactor_1.rds")
-```
-
-
-```{r mse_libfactor_1, fig.width=7}
-mse_libfactor_1 <- readRDS(file = "output/transform_null.Rmd/mse_libfactor_1.rds")
-
-levels(mse_libfactor_1$transform_method)
-labels_methods <- c("edger", "deseq2", "limma_voom", "ttest_log2_none_p1",
-            "ttest_log2_libsum_p1", "ttest_log2_libscale_TMM_p1", 
-            "ttest_log2_libscale_RLE_p1", "ttest_counts_pearsons")
-
-
-mse_libfactor_1 %>% #filter(n1==50) %>% 
-    group_by(nsim, transform_method) %>%
+out %>% #filter(n1==50) %>% 
+    group_by(nsim, method) %>%
     summarise(mse_mn =mean(mse, na.rm=T)) %>%
-    ggplot(., aes(x=transform_method, y=mse_mn, col=transform_method)) +
+    ggplot(., aes(x=method, y=mse_mn, col=method)) +
 #        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab("Methods") +
+        geom_boxplot() + geom_point() + xlab("Mean squared error") +
         ylab("Mean squared error") +
-        ggtitle("Libsize factor 2 - Mean squared error") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
-       stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
-
-subset(mse_libfactor_1, transform_method != "limma_voom") %>% #filter(n1==50) %>% 
-    group_by(nsim, transform_method) %>%
-    summarise(mse_mn =mean(mse, na.rm=T)) %>%
-    ggplot(., aes(x=transform_method, y=mse_mn, col=transform_method)) +
-#        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab("Methods") +
-        ylab("Mean squared error") +
-        ggtitle("Libsize factor 2 - Mean squared error") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods[-3]) +
+      scale_x_discrete(position = "top") +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 ```
+
+
 
 
 ---
@@ -529,7 +453,7 @@ subset(mse_libfactor_1, transform_method != "limma_voom") %>% #filter(n1==50) %>
 ## library size factor 2 
 
 
-```{r simulate_data_libfactor_2_type1error, warning=F, message=F, eval=F}
+```{r simulate_data_libfactor_2, warning=F, message=F, eval=F}
 counts <- readRDS("dsc/data/pbmc_counts.rds")
 nsamp <- 100
 ngene <- 1000
@@ -548,251 +472,61 @@ for (i in 1:nsim) {
 }
 
 
-nsim <- 50
-transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM_p1", 
-                            "log2_libscale_RLE_p1", "counts_pearsons")
-de_methods_list <- c("edger", "deseq2", "limma_voom", "t_test")
-
-# transform_methods_list <- c("log2_none_p1")
-# de_methods_list <- c("t_test")
-
+nsim=50
 out <- do.call(rbind, lapply(1:nsim, function(i) {
-
+  print(i)
   data_obj <- readRDS(file = paste0("output/transform_null.Rmd/data_obj_libfactor_2_",
                                     i,".rds"))
-  Y <- t(data_obj$Y)
-  X <- data_obj$X
-  keep_genes <- filter_genes(Y, min_cell_detected=5)
-  Y <- Y[keep_genes,]
-  
-  foo_m <- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
 
-  if (de_methods_list[j] == "edger") {
-      res <- edger(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "deseq2") {
-      res <- deseq2(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "limma_voom") {
-      res <- limma_voom(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                        type1error_005=mean(pvals < .005, na.rm=TRUE),
-                        type1error_001=mean(pvals < .001, na.rm=TRUE),
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == "t_test") {
-      foo_t <- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == "log2_none_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "none", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libsum_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "sum", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_TMM_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "TMM", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_RLE_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "RLE", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "counts_pearsons") {
-          transformed_Y <- transform_data(Y, libscale_method = "pearsons_residual", 
-                                          log="none", pseudo_count=1)
-          }
-          res <- t_test(transformed_Y, X)
-          pvals <- res[2,]
-          return(data.frame(type1error_01=mean(pvals < .01, na.rm=TRUE),
-                            type1error_005=mean(pvals < .005, na.rm=TRUE),
-                            type1error_001=mean(pvals < .001, na.rm=TRUE),
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
+  res <- run_methods(data_obj, i, verbose = T)
+  return(res)
   }) )
-   return(foo_m)
-}))
+out$method <- as.character(out$de_method)
+which_relabel <- which(as.character(out$de_method) != as.character(out$transform_method))
+out$method[which_relabel] <- paste(as.character(out$de_method), as.character(out$transform_method), sep="_")[which_relabel]
+out$method <- factor(out$method)
 
-
-saveRDS(out, file = "output/transform_null.Rmd/type1error_libfactor_2.rds")
+saveRDS(out, file = "output/transform_null.Rmd/libfactor_2.rds")
 ```
 
-### Type I error distribution
+Results
 
-```{r type1error_libfactor_2, eval=T}
+```{r results_libfactor_2, eval=T, fig.width=8}
 #alpha <- .001
-out <- readRDS(file = "output/transform_null.Rmd/type1error_libfactor_2.rds")
+out <- readRDS(file = "output/transform_null.Rmd/libfactor_2.rds")
 
-levels(out$transform_method)
-labels_methods <- c("edger", "deseq2", "limma_voom", "ttest_log2_none_p1",
-            "ttest_log2_libsum_p1", "ttest_log2_libscale_TMM_p1", 
-            "ttest_log2_libscale_RLE_p1", "ttest_counts_pearsons")
-
+levels(out$method)
 
 out %>% #filter(n1==50) %>% 
-    group_by(de_method, transform_method) %>%
-    ggplot(., aes(x=transform_method, y=type1error_001, col=transform_method)) +
+    group_by(method) %>%
+    ggplot(., aes(x=method, y=type1error_001, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .001") +
         geom_hline(yintercept = .001, col="gray50") +
         ylab("Type I error") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods) +
+      scale_x_discrete(position = "top") +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
   
 out %>% #filter(n1==50) %>% 
-    group_by(de_method, transform_method) %>%
-    ggplot(., aes(x=transform_method, y=type1error_01, col=transform_method)) +
+    group_by(method) %>%
+    ggplot(., aes(x=method, y=type1error_01, col=method)) +
 #        facet_wrap(~de_method) +
         geom_boxplot() + geom_point() + xlab("Type 1 error at alpha < .01") +
         geom_hline(yintercept = .01, col="gray50") +
         ylab("Type I error") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods) +
-       theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
-       stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
-```
-
-
-### MSE
-
-```{r simulate_data_libfactor_2_mse, warning=F, message=F, eval=F}
-nsim <- 50    
-transform_methods_list <- c("log2_none_p1", "log2_libsum_p1", "log2_libscale_TMM_p1", 
-                            "log2_libscale_RLE_p1", "counts_pearsons")
-de_methods_list <- c("edger", "deseq2", "limma_voom", "t_test")
-
-out <- do.call(rbind, lapply(1:nsim, function(i) {
-
-  data_obj <- readRDS(file = paste0("output/transform_null.Rmd/data_obj_libfactor_2_",
-                                    i,".rds"))
-  Y <- t(data_obj$Y)
-  X <- data_obj$X
-  beta <- data_obj$beta
-  
-  keep_genes <- filter_genes(Y, min_cell_detected=5)
-  Y <- Y[keep_genes,]
-  beta <- beta[keep_genes]
-  
-  foo_m <- do.call(rbind, lapply(1:length(de_methods_list), function(j) {
-
-  if (de_methods_list[j] == "edger") {
-      res <- edger(Y=Y, X=X)
-      return(data.frame(mse = (res$est-beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "deseq2") {
-      res <- deseq2(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(mse = (res$est - beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-  if (de_methods_list[j] == "limma_voom") {
-      res <- limma_voom(Y=Y, X=X)
-      pvals <- res$pval
-      return(data.frame(mse=(res$betahat-beta)^2,
-                        transform_method = de_methods_list[j],
-                        de_method = de_methods_list[j],
-                        nsim = i))
-  } 
-
-  if (de_methods_list[j] == "t_test") {
-      foo_t <- do.call(rbind, lapply(1:length(transform_methods_list), function(k) {
-          if (transform_methods_list[k] == "log2_none_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "none", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libsum_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "sum", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_TMM_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "TMM", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "log2_libscale_RLE_p1") {
-          transformed_Y <- transform_data(Y, libscale_method = "RLE", 
-                                          log="log2", pseudo_count=1)
-          }
-          if (transform_methods_list[k] == "counts_pearsons") {
-          transformed_Y <- transform_data(Y, libscale_method = "pearsons_residual", 
-                                          log="none", pseudo_count=1)
-          }
-          res <- t_test(transformed_Y, X)
-          return(data.frame(mse=(res[1,]-beta)^2,
-                            transform_method = transform_methods_list[k],
-                            de_method = de_methods_list[j],
-                            nsim = i))
-      }) )
-      return(foo_t)      
-    }
-  }) )
-   return(foo_m)
-}))
-
-saveRDS(out, file = "output/transform_null.Rmd/mse_libfactor_2.rds")
-```
-
-
-```{r mse_libfactor_2}
-mse_libfactor_2 <- readRDS(file = "output/transform_null.Rmd/mse_libfactor_2.rds")
-
-levels(mse_libfactor_1$transform_method)
-labels_methods <- c("edger", "deseq2", "limma_voom", "ttest_log2_none_p1",
-            "ttest_log2_libsum_p1", "ttest_log2_libscale_TMM_p1", 
-            "ttest_log2_libscale_RLE_p1", "ttest_counts_pearsons")
-
-
-mse_libfactor_1 %>% #filter(n1==50) %>% 
-    group_by(nsim, transform_method) %>%
-    summarise(mse_mn =mean(mse, na.rm=T)) %>%
-    ggplot(., aes(x=transform_method, y=mse_mn, col=transform_method)) +
-#        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab("Methods") +
-        ylab("Mean squared error") +
-        ggtitle("Bias of the estimates") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods) +
+      scale_x_discrete(position = "top") +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 
-subset(mse_libfactor_1, transform_method != "limma_voom") %>% #filter(n1==50) %>% 
-    group_by(nsim, transform_method) %>%
+out %>% #filter(n1==50) %>% 
+    group_by(nsim, method) %>%
     summarise(mse_mn =mean(mse, na.rm=T)) %>%
-    ggplot(., aes(x=transform_method, y=mse_mn, col=transform_method)) +
+    ggplot(., aes(x=method, y=mse_mn, col=method)) +
 #        facet_wrap(~de_method) +
-        geom_boxplot() + geom_point() + xlab("Methods") +
+        geom_boxplot() + geom_point() + xlab("Mean squared error") +
         ylab("Mean squared error") +
-        ggtitle("Bias of the estimates") +
-      scale_x_discrete(position = "top",
-                       labels=labels_methods[-3]) +
+      scale_x_discrete(position = "top") +
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom="point", shape=4, size=4, col="black")
 ```
