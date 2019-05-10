@@ -341,10 +341,10 @@ This reproducible <a href="http://rmarkdown.rstudio.com">R Markdown</a> analysis
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree5d43eb7674e12a4f95b9e355bd26a2c0139930fetargetblank5d43eb7a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/5d43eb7674e12a4f95b9e355bd26a2c0139930fe" target="_blank">5d43eb7</a> </a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree4f25ca2abdb1357f3135519359f85c31f7c3fd6ftargetblank4f25ca2a"> <span class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> <strong>Repository version:</strong> <a href="https://github.com/stephenslab/dsc-log-fold-change/tree/4f25ca2abdb1357f3135519359f85c31f7c3fd6f" target="_blank">4f25ca2</a> </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree5d43eb7674e12a4f95b9e355bd26a2c0139930fetargetblank5d43eb7a" class="panel-collapse collapse">
+<div id="strongRepositoryversionstrongahrefhttpsgithubcomstephenslabdsclogfoldchangetree4f25ca2abdb1357f3135519359f85c31f7c3fd6ftargetblank4f25ca2a" class="panel-collapse collapse">
 <div class="panel-body">
 <p>
 Great! You are using Git for version control. Tracking code development and connecting the code version to the results is critical for reproducibility. The version displayed above was the version of the Git repository at the time these results were generated. <br><br> Note that you need to be careful to ensure that all relevant files for the analysis have been committed to Git prior to generating the results (you can use <code>wflow_publish</code> or <code>wflow_git_commit</code>). workflowr only checks the R Markdown file, but you know if there are other scripts or data files that it depends on. Below is the status of the Git repository when the results were generated:
@@ -363,10 +363,9 @@ Ignored files:
 
 Unstaged changes:
     Modified:   analysis/eval_initial.Rmd
-    Modified:   analysis/index.Rmd
     Modified:   dsc/benchmark.dsc
     Modified:   dsc/benchmark.sh
-    Modified:   dsc/modules/limma_voom.R
+    Modified:   dsc/modules/transform_data.R
 
 </code></pre>
 <p>
@@ -405,6 +404,40 @@ Message
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>
+Rmd
+</td>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/4f25ca2abdb1357f3135519359f85c31f7c3fd6f/analysis/transform_null.Rmd" target="_blank">4f25ca2</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+<td>
+update results
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/stephenslab/dsc-log-fold-change/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/transform_null.html" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+<td>
+Build site.
+</td>
+</tr>
 <tr>
 <td>
 Rmd
@@ -580,10 +613,15 @@ downstream effects of data transformation methods in null datasets: initial asse
 <p><span class="math inline">\(p\)</span>: a positive pseudo-count added to expression matrix; traditionally it is used to ensure log-transformation of the expression matrix is well-defined. For now we use pseudo-count of 1.</p>
 <ol style="list-style-type: decimal">
 <li><p><code>log2_none_p1</code>: <span class="math inline">\(log2(X_{ig} + p)\)</span> where <span class="math inline">\(p=1\)</span>.</p></li>
-<li><p><code>log2_libsum_p1</code>: <span class="math inline">\(log2(X_{ig}/X_{i+} + p)\)</span> where <span class="math inline">\(p=1\)</span></p></li>
+<li><p><code>log2_libsum_p1</code>: <span class="math inline">\(log2(X_{ig}/X_{i+} + p)\)</span> where <span class="math inline">\(p=1\)</span>. Commonly know as <code>total sum normalization</code> or <code>tota count normalization</code>. This methods assumes that the true library size is the same across cells.</p></li>
 <li><p><code>log2_libscale_TMM_p1</code>: <span class="math inline">\(log2(X_{ig}/S_{i} + p)\)</span> where <span class="math inline">\(p=1\)</span> using edgeR TMM method to estimate <span class="math inline">\(S_i\)</span>.</p></li>
-<li><p><code>log2_libscale_RLE_p1</code>: <span class="math inline">\(log2(X_{ig}/S_{i} + p)\)</span> where <span class="math inline">\(p=1\)</span> using DESeq2 RLE method to estimate <span class="math inline">\(S_i\)</span>.</p></li>
-<li><p><code>counts_pearsons</code>: Pearson’s residuals of expression counts, derived using <code>sctransform</code> (Hafemeister and Satija, 2019).</p></li>
+<li><p><code>log2_libscale_RLE_p1</code>: <span class="math inline">\(log2(X_{ig}/S_{i} + p)\)</span> where <span class="math inline">\(p=1\)</span> using DESeq2 RLE (Relative Log Expression) method to estimate <span class="math inline">\(S_i\)</span>. This method assumes that gene expression distribution across samples should be similar, and to account for outlier genes, they let the medians of gene expression distribution to be the same across samples (cells). The size factor of the library size is estimated to be the median of the ratios of observed counts:</p></li>
+</ol>
+<p><span class="math display">\[
+\widehat{S}_i = \text{median}_g \frac{X_{ig}}{(\prod^N_{n=1}X_{ig})^{1/N}}
+\]</span></p>
+<ol start="5" style="list-style-type: decimal">
+<li><code>counts_pearsons</code>: Pearson’s residuals of expression counts, derived using <code>sctransform</code> (Hafemeister and Satija, 2019).</li>
 </ol>
 <hr />
 <p>Pipelines compared:</p>
@@ -607,6 +645,7 @@ downstream effects of data transformation methods in null datasets: initial asse
 <p>Data simulation parameters:</p>
 <ul>
 <li>100 cells (50 vs 50)</li>
+<li>libsize_factor: 0, 1, 2 (group 1 is 2^0, 2^1 and 2^2 of group 2)</li>
 <li>1K genes randomly drawn</li>
 <li>100% null genes</li>
 <li>50 simulated datasets</li>
@@ -864,6 +903,43 @@ levels(out$method)</code></pre>
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
 <p><img src="figure/transform_null.Rmd/results-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results-1">
+Past versions of results-1.png
+</button>
+</p>
+<div id="fig-results-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results-1.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
     group_by(method) %&gt;%
     ggplot(., aes(x=method, y=type1error_01, col=method)) +
@@ -875,6 +951,43 @@ levels(out$method)</code></pre>
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
 <p><img src="figure/transform_null.Rmd/results-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results-2">
+Past versions of results-2.png
+</button>
+</p>
+<div id="fig-results-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results-2.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
     group_by(nsim, method) %&gt;%
     summarise(mse_mn =mean(mse, na.rm=T)) %&gt;%
@@ -886,6 +999,43 @@ levels(out$method)</code></pre>
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
 <p><img src="figure/transform_null.Rmd/results-3.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results-3">
+Past versions of results-3.png
+</button>
+</p>
+<div id="fig-results-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results-3.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <hr />
 </div>
 <div id="library-size-factor-1" class="section level2">
@@ -922,8 +1072,8 @@ out &lt;- do.call(rbind, lapply(1:nsim, function(i) {
 out$method &lt;- as.character(out$de_method)
 which_relabel &lt;- which(as.character(out$de_method) != as.character(out$transform_method))
 out$method[which_relabel] &lt;- paste(as.character(out$de_method), as.character(out$transform_method), sep=&quot;_&quot;)[which_relabel]
-
 out$method &lt;- factor(out$method)
+
 saveRDS(out, file = &quot;output/transform_null.Rmd/libfactor_1.rds&quot;)</code></pre>
 <p>Results</p>
 <pre class="r"><code>#alpha &lt;- .001
@@ -949,6 +1099,43 @@ levels(out$method)</code></pre>
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
 <p><img src="figure/transform_null.Rmd/results_libfactor_1-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results_libfactor_1-1">
+Past versions of results_libfactor_1-1.png
+</button>
+</p>
+<div id="fig-results_libfactor_1-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results_libfactor_1-1.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
     group_by(method) %&gt;%
     ggplot(., aes(x=method, y=type1error_01, col=method)) +
@@ -960,6 +1147,43 @@ levels(out$method)</code></pre>
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
 <p><img src="figure/transform_null.Rmd/results_libfactor_1-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results_libfactor_1-2">
+Past versions of results_libfactor_1-2.png
+</button>
+</p>
+<div id="fig-results_libfactor_1-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results_libfactor_1-2.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
     group_by(nsim, method) %&gt;%
     summarise(mse_mn =mean(mse, na.rm=T)) %&gt;%
@@ -971,6 +1195,43 @@ levels(out$method)</code></pre>
        theme(axis.text.x=element_text(angle = 20, vjust = -.3, hjust=.1)) +
        stat_summary(fun.y=mean, geom=&quot;point&quot;, shape=4, size=4, col=&quot;black&quot;)</code></pre>
 <p><img src="figure/transform_null.Rmd/results_libfactor_1-3.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results_libfactor_1-3">
+Past versions of results_libfactor_1-3.png
+</button>
+</p>
+<div id="fig-results_libfactor_1-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results_libfactor_1-3.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <hr />
 </div>
 <div id="library-size-factor-2" class="section level2">
@@ -1035,6 +1296,43 @@ levels(out$method)</code></pre>
 <pre><code>Warning: Removed 3 rows containing non-finite values (stat_summary).</code></pre>
 <pre><code>Warning: Removed 3 rows containing missing values (geom_point).</code></pre>
 <p><img src="figure/transform_null.Rmd/results_libfactor_2-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results_libfactor_2-1">
+Past versions of results_libfactor_2-1.png
+</button>
+</p>
+<div id="fig-results_libfactor_2-1" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results_libfactor_2-1.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
     group_by(method) %&gt;%
     ggplot(., aes(x=method, y=type1error_01, col=method)) +
@@ -1049,6 +1347,43 @@ levels(out$method)</code></pre>
 <pre><code>Warning: Removed 3 rows containing non-finite values (stat_summary).</code></pre>
 <pre><code>Warning: Removed 3 rows containing missing values (geom_point).</code></pre>
 <p><img src="figure/transform_null.Rmd/results_libfactor_2-2.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results_libfactor_2-2">
+Past versions of results_libfactor_2-2.png
+</button>
+</p>
+<div id="fig-results_libfactor_2-2" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results_libfactor_2-2.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <pre class="r"><code>out %&gt;% #filter(n1==50) %&gt;% 
     group_by(nsim, method) %&gt;%
     summarise(mse_mn =mean(mse, na.rm=T)) %&gt;%
@@ -1063,6 +1398,43 @@ levels(out$method)</code></pre>
 <pre><code>Warning: Removed 3 rows containing non-finite values (stat_summary).</code></pre>
 <pre><code>Warning: Removed 3 rows containing missing values (geom_point).</code></pre>
 <p><img src="figure/transform_null.Rmd/results_libfactor_2-3.png" width="768" style="display: block; margin: auto;" /></p>
+<p>
+<button type="button" class="btn btn-default btn-xs btn-workflowr btn-workflowr-fig" data-toggle="collapse" data-target="#fig-results_libfactor_2-3">
+Past versions of results_libfactor_2-3.png
+</button>
+</p>
+<div id="fig-results_libfactor_2-3" class="collapse">
+<div class="table-responsive">
+<table class="table table-condensed table-hover">
+<thead>
+<tr>
+<th>
+Version
+</th>
+<th>
+Author
+</th>
+<th>
+Date
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="https://github.com/stephenslab/dsc-log-fold-change/blob/e6fb98b6639f547c90e4d6c2fc4586fbd48fab2f/docs/figure/transform_null.Rmd/results_libfactor_2-3.png" target="_blank">e6fb98b</a>
+</td>
+<td>
+Joyce Hsiao
+</td>
+<td>
+2019-05-10
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <hr />
 <p>TBD</p>
 <pre class="r"><code>res_libfactor_null &lt;- readRDS(file = &quot;output/transform_null.Rmd/type1error.rds&quot;)
