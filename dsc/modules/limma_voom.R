@@ -1,11 +1,16 @@
-limma_voom <- function(Y, X){
+limma_voom <- function(Y, X, libnorm_factors=NULL){
 
   library(limma)
   library(edgeR)
 
-  # default is TMM normalization
-   design <- X
-   v <- voom(Y,design,plot=FALSE)
+  design <- X
+  if (is.null(libnorm_factors)) {
+    # divided by library size with no adjustment
+    v <- voom(Y,design=design,plot=FALSE)
+  } else {
+    # multiple library size by normalizing factors
+    v <- voom(Y,design=design, plot=F, lib.size=colSums(Y)*libnorm_factors)
+  }
    fit <- lmFit(v,design)
    fit.ebayes <- eBayes(fit)
 
