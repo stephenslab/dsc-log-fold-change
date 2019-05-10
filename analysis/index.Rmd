@@ -9,7 +9,6 @@ output:
 Project website for benchmarking methods for single-cell DE methods. 
 
 
-## Analysis
 
 ### Sample size 
 
@@ -27,10 +26,11 @@ Project website for benchmarking methods for single-cell DE methods.
     * [Type I error](gtex_type1.html)    
     * [Power and false discovery rate](gtex_power.html)
 
-## Data transformation
+### Data transformation
 
-* [Type I error of various data transformation methods in null datasets.](transform_null.html)
+* [Type I error in null datasets with different library sizes between groups](transform_null.html)
 
+---
 
 ### Data we used 
 
@@ -40,7 +40,7 @@ Project website for benchmarking methods for single-cell DE methods.
 
 ---
 
-## One-time investigations
+### One-time investigations
 
 * Replicate results in Van den Berge et al., 2018
     * Curate PBMC dataset using [their code](pbmc_berge_null.html)
