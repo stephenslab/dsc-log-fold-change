@@ -28,13 +28,17 @@ $S_i$: library size normalization factor for cell $i$
 
 $p$: a positive pseudo-count added to expression matrix; traditionally it is used to ensure log-transformation of the expression matrix is well-defined. For now we use pseudo-count of 1.
 
-1. `log2_none_p1`: $log2(X_{ig} + p)$ where $p=1$.
+1. `log2_none_p1`: $log2(X_{ig} + p)$ where $p=1$. 
 
-2. `log2_libsum_p1`: $log2(X_{ig}/X_{i+} + p)$ where $p=1$
+2. `log2_libsum_p1`: $log2(X_{ig}/X_{i+} + p)$ where $p=1$. Commonly know as `total sum normalization` or `tota count normalization`. This methods assumes that the true library size is the same across cells.  
 
 3. `log2_libscale_TMM_p1`: $log2(X_{ig}/S_{i} + p)$ where $p=1$ using edgeR TMM method to estimate $S_i$.
 
-4. `log2_libscale_RLE_p1`: $log2(X_{ig}/S_{i} + p)$ where $p=1$ using DESeq2 RLE method to estimate $S_i$.
+4. `log2_libscale_RLE_p1`: $log2(X_{ig}/S_{i} + p)$ where $p=1$ using DESeq2 RLE (Relative Log Expression) method to estimate $S_i$. This method assumes that gene expression distribution across samples should be similar, and to account for outlier genes, they let the medians of gene expression distribution to be the same across samples (cells). The size factor of the library size is estimated to be the median of the ratios of observed counts:
+
+$$
+\widehat{S}_i = \text{median}_g \frac{X_{ig}}{(\prod^N_{n=1}X_{ig})^{1/N}}
+$$
 
 5. `counts_pearsons`: Pearson's residuals of expression counts, derived using `sctransform` (Hafemeister and Satija, 2019). 
 
@@ -72,10 +76,10 @@ $\sigma_{ig} = \sqrt(\mu_{ig} + \mu^2_{ig}/\theta_{g})$
 Data simulation parameters:
 
 * 100 cells (50 vs 50)
+* libsize_factor: 0, 1, 2 (group 1 is 2^0, 2^1 and 2^2 of group 2)
 * 1K genes randomly drawn
 * 100% null genes
 * 50 simulated datasets
-
 
 ---
 
@@ -398,8 +402,8 @@ out <- do.call(rbind, lapply(1:nsim, function(i) {
 out$method <- as.character(out$de_method)
 which_relabel <- which(as.character(out$de_method) != as.character(out$transform_method))
 out$method[which_relabel] <- paste(as.character(out$de_method), as.character(out$transform_method), sep="_")[which_relabel]
-
 out$method <- factor(out$method)
+
 saveRDS(out, file = "output/transform_null.Rmd/libfactor_1.rds")
 ```
 
