@@ -14,17 +14,17 @@ transform_data <- function(Y, X=NULL, pseudo_count = 1, log=c("none", "log2", "l
     }
     if (libscale_method == "sum") {
       # assume all UMI data, and total library size ~ 100K
-      transformed_Y <- log2(10e+05 * t(t(Y)/libsize) + pseudo_count)
+      transformed_Y <- log2(1e+05 * t(t(Y)/libsize) + pseudo_count)
     }
     if (libscale_method == "TMM") {
       libscale_factors <- edgeR::calcNormFactors(Y, method = libscale_method)
       libsize_normed <- libsize*libscale_factors
-      transformed_Y <- log2(10e+05 * t(t(Y)/libsize_normed) + pseudo_count)
+      transformed_Y <- log2(1e+05 * t(t(Y)/libsize_normed) + pseudo_count)
     }
     if (libscale_method == "RLE") {
       libscale_factors <- edgeR::calcNormFactors(Y, method = libscale_method)
       libsize_normed <- libsize*libscale_factors
-      transformed_Y <- log2(10e+05 * t(t(Y)/libsize_normed) + pseudo_count)
+      transformed_Y <- log2(1e+05 * t(t(Y)/libsize_normed) + pseudo_count)
     }
   }
   if (log=="none" & libscale_method == "pearsons_residual") {
